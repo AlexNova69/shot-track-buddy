@@ -1,0 +1,113 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { toast } from "@/hooks/use-toast";
+
+interface SideEffectDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function SideEffectDialog({ open, onOpenChange }: SideEffectDialogProps) {
+  const [sideEffects, setSideEffects] = useLocalStorage("sideEffects", []);
+  const [date, setDate] = useState<Date>(new Date());
+  const [description, setDescription] = useState("");
+
+  const handleSave = () => {
+    if (!description.trim()) {
+      toast({
+        title: "Ошибка",
+        description: "Введите описание побочного эффекта",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newSideEffect = {
+      id: Date.now(),
+      date: date.toISOString(),
+      description: description.trim(),
+    };
+
+    setSideEffects([...sideEffects, newSideEffect]);
+    
+    // Reset form
+    setDate(new Date());
+    setDescription("");
+    
+    toast({
+      title: "Побочный эффект записан",
+      description: "Запись успешно сохранена",
+    });
+    
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Записать побочный эффект</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <Label>Дата наблюдения</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP", { locale: ru }) : "Выберите дату"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(selectedDate) => selectedDate && setDate(selectedDate)}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label htmlFor="description">Описание состояния и комментарии</Label>
+            <Textarea
+              id="description"
+              placeholder="Опишите наблюдаемые побочные эффекты, самочувствие, изменения в состоянии..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={handleSave} className="flex-1">
+              Сохранить
+            </Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+              Отмена
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
