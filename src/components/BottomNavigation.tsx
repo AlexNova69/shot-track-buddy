@@ -1,15 +1,19 @@
 import { Home, History, BarChart3, User } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translations } from "@/lib/translations";
 
 export function BottomNavigation() {
   const location = useLocation();
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const navItems = [
-    { path: "/", icon: Home, label: "Главная" },
-    { path: "/history", icon: History, label: "История" },
-    { path: "/charts", icon: BarChart3, label: "Графики" },
-    { path: "/profile", icon: User, label: "Профиль" },
+    { path: "/", icon: Home, label: t.home },
+    { path: "/history", icon: History, label: t.history },
+    { path: "/charts", icon: BarChart3, label: t.charts },
+    { path: "/profile", icon: User, label: t.profile },
   ];
 
   return (

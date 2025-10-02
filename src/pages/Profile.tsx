@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,12 +8,19 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Calculator, Trash2, Settings, Bell, Download } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "@/hooks/use-toast";
 import { NotificationManager } from "@/components/NotificationManager";
 import { DataExporter } from "@/components/DataExporter";
 import { ThemeSelector } from "@/components/ThemeSelector";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { translations } from "@/lib/translations";
+import { Separator } from "@/components/ui/separator";
 
 export default function Profile() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  
   const [profile, setProfile] = useLocalStorage("profile", {
     name: "",
     gender: "",
@@ -357,10 +364,35 @@ export default function Profile() {
           <DataExporter />
         </TabsContent>
 
-        <TabsContent value="settings">
+        <TabsContent value="settings" className="space-y-4">
           <ThemeSelector />
+          <LanguageSelector />
         </TabsContent>
       </Tabs>
+
+      {/* App Info Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            {t.appName}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div>
+            <p className="font-medium">{t.appVersion}: 1.0.0</p>
+          </div>
+          <Separator />
+          <div>
+            <p className="font-medium">{t.appAuthor}: Aleksandr Kesarev</p>
+          </div>
+          <Separator />
+          <div>
+            <CardDescription className="text-xs leading-relaxed">
+              {t.appDescription}
+            </CardDescription>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
