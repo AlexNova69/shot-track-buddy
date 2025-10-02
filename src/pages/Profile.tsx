@@ -82,27 +82,6 @@ export default function Profile() {
     };
     setFormData(emptyProfile);
     setProfile(emptyProfile);
-    setFormData({
-      name: "",
-      gender: "",
-      age: "",
-      height: "",
-      currentWeight: "",
-      targetWeight: "",
-      medication: "",
-      bmr: "",
-    });
-    setProfile({
-      name: "",
-      gender: "",
-      age: "",
-      height: "",
-      currentWeight: "",
-      targetWeight: "",
-      medication: "",
-      bmr: "",
-      customFields: [],
-    });
     
     // Clear all app data
     localStorage.removeItem("injections");
