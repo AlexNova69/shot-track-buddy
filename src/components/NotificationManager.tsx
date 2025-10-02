@@ -9,13 +9,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Bell, Plus, Trash2, Clock } from "lucide-react";
 import { useNotifications, Notification } from "@/hooks/useNotifications";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translations } from "@/lib/translations";
 
 export function NotificationManager() {
+  const { language } = useLanguage();
+  const t = translations[language];
   const { notifications, permission, requestPermission, addNotification, updateNotification, deleteNotification, toggleNotification } = useNotifications();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newNotification, setNewNotification] = useState({
-    title: "Напоминание об инъекции",
-    message: "Время для укола!",
+    title: t.injectionReminder,
+    message: t.timeForShot,
     time: "09:00",
     repeat: "daily" as const,
     customDays: 1,
@@ -26,13 +30,13 @@ export function NotificationManager() {
     const granted = await requestPermission();
     if (granted) {
       toast({
-        title: "Разрешение получено",
-        description: "Теперь вы будете получать уведомления",
+        title: t.permissionGranted,
+        description: t.nowReceiveNotifications,
       });
     } else {
       toast({
-        title: "Разрешение отклонено",
-        description: "Включите уведомления в настройках браузера",
+        title: t.permissionDenied,
+        description: t.enableInBrowser,
         variant: "destructive",
       });
     }
@@ -41,8 +45,8 @@ export function NotificationManager() {
   const handleAddNotification = () => {
     addNotification(newNotification);
     setNewNotification({
-      title: "Напоминание об инъекции",
-      message: "Время для укола!",
+      title: t.injectionReminder,
+      message: t.timeForShot,
       time: "09:00",
       repeat: "daily",
       customDays: 1,
@@ -50,8 +54,8 @@ export function NotificationManager() {
     });
     setIsDialogOpen(false);
     toast({
-      title: "Напоминание добавлено",
-      description: "Уведомление будет отправлено в назначенное время",
+      title: t.reminderAdded,
+      description: t.notificationScheduled,
     });
   };
 
@@ -61,7 +65,7 @@ export function NotificationManager() {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-medical-primary" />
-            Напоминания
+            {t.reminders}
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -71,11 +75,11 @@ export function NotificationManager() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Новое напоминание</DialogTitle>
+                <DialogTitle>{t.newReminder}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="title">Заголовок</Label>
+                  <Label htmlFor="title">{t.title}</Label>
                   <Input
                     id="title"
                     value={newNotification.title}
@@ -83,7 +87,7 @@ export function NotificationManager() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="message">Сообщение</Label>
+                  <Label htmlFor="message">{t.message}</Label>
                   <Input
                     id="message"
                     value={newNotification.message}
@@ -91,7 +95,7 @@ export function NotificationManager() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="time">Время</Label>
+                  <Label htmlFor="time">{t.time}</Label>
                   <Input
                     id="time"
                     type="time"
@@ -100,22 +104,22 @@ export function NotificationManager() {
                   />
                 </div>
                 <div>
-                  <Label>Повтор</Label>
+                  <Label>{t.repeat}</Label>
                   <Select value={newNotification.repeat} onValueChange={(value: any) => setNewNotification({ ...newNotification, repeat: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="daily">Ежедневно</SelectItem>
-                      <SelectItem value="weekly">Еженедельно</SelectItem>
-                      <SelectItem value="monthly">Ежемесячно</SelectItem>
-                      <SelectItem value="custom">Через N дней</SelectItem>
+                      <SelectItem value="daily">{t.daily}</SelectItem>
+                      <SelectItem value="weekly">{t.weekly}</SelectItem>
+                      <SelectItem value="monthly">{t.monthly}</SelectItem>
+                      <SelectItem value="custom">{t.customDays}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {(newNotification.repeat as string) === "custom" && (
                   <div>
-                    <Label htmlFor="customDays">Количество дней</Label>
+                    <Label htmlFor="customDays">{t.daysCount}</Label>
                     <Input
                       id="customDays"
                       type="number"
@@ -126,7 +130,7 @@ export function NotificationManager() {
                   </div>
                 )}
                 <Button onClick={handleAddNotification} className="w-full">
-                  Добавить напоминание
+                  {t.addReminder}
                 </Button>
               </div>
             </DialogContent>
@@ -136,15 +140,15 @@ export function NotificationManager() {
       <CardContent className="space-y-4">
         {permission !== "granted" && (
           <div className="p-4 bg-medical-warning/10 border border-medical-warning/20 rounded-lg">
-            <p className="text-sm text-medical-warning mb-2">Для получения напоминаний необходимо разрешить уведомления</p>
+            <p className="text-sm text-medical-warning mb-2">{t.permissionRequired}</p>
             <Button onClick={handlePermissionRequest} size="sm">
-              Разрешить уведомления
+              {t.allowNotifications}
             </Button>
           </div>
         )}
         
         {notifications.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">Напоминания не настроены</p>
+          <p className="text-muted-foreground text-center py-4">{t.noReminders}</p>
         ) : (
           <div className="space-y-3">
             {notifications.map((notification) => (
@@ -154,10 +158,10 @@ export function NotificationManager() {
                     <Clock className="w-4 h-4 text-medical-primary" />
                     <span className="font-medium">{notification.time}</span>
                     <span className="text-sm text-muted-foreground">
-                      {notification.repeat === "daily" ? "Ежедневно" :
-                       notification.repeat === "weekly" ? "Еженедельно" :
-                       notification.repeat === "monthly" ? "Ежемесячно" :
-                       `Через ${notification.customDays} дн.`}
+                      {notification.repeat === "daily" ? t.daily :
+                       notification.repeat === "weekly" ? t.weekly :
+                       notification.repeat === "monthly" ? t.monthly :
+                       `${t.through} ${notification.customDays} ${t.days}`}
                     </span>
                   </div>
                   <p className="text-sm">{notification.title}</p>

@@ -3,8 +3,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Syringe, Weight, AlertTriangle, Target } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translations } from "@/lib/translations";
 
 export default function History() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  const locale = language === "ru" ? "ru-RU" : "en-US";
+  
   const [injections] = useLocalStorage("injections", []);
   const [weights] = useLocalStorage("weights", []);
   const [sideEffects] = useLocalStorage("sideEffects", []);
@@ -20,13 +26,13 @@ export default function History() {
   const getRecordContent = (record: any) => {
     switch (record.type) {
       case "injection":
-        return `Доза: ${record.dose}мг, Место: ${record.site}`;
+        return `${t.doseField}: ${record.dose}${language === "ru" ? "мг" : "mg"}, ${t.siteField}: ${record.site}`;
       case "weight":
-        return `${record.weight}кг`;
+        return `${record.weight}${language === "ru" ? "кг" : "kg"}`;
       case "sideEffect":
         return record.description;
       case "site":
-        return `Место: ${record.site}`;
+        return `${t.siteField}: ${record.site}`;
       default:
         return "";
     }
@@ -50,13 +56,13 @@ export default function History() {
   const getTypeName = (type: string) => {
     switch (type) {
       case "injection":
-        return "Инъекция";
+        return t.injection;
       case "weight":
-        return "Вес";
+        return t.weightRecord;
       case "sideEffect":
-        return "Побочный эффект";
+        return t.sideEffectRecord;
       case "site":
-        return "Место инъекции";
+        return t.injectionSiteRecord;
       default:
         return "";
     }
@@ -64,13 +70,13 @@ export default function History() {
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-6">История записей</h2>
+      <h2 className="text-2xl font-bold mb-6">{t.recordsHistory}</h2>
       
       {allRecords.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-muted-foreground">
             <Syringe className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Записей пока нет</p>
+            <p>{t.noRecordsYet}</p>
           </CardContent>
         </Card>
       ) : (
@@ -90,7 +96,7 @@ export default function History() {
                           {getTypeName(record.type)}
                         </Badge>
                         <CardTitle className="text-sm">
-                          {new Date(record.date).toLocaleDateString("ru-RU")}
+                          {new Date(record.date).toLocaleDateString(locale)}
                         </CardTitle>
                         <p className="text-sm text-muted-foreground mt-1">
                           {getRecordContent(record)}

@@ -9,10 +9,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
+import { ru, enUS } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translations } from "@/lib/translations";
 
 interface InjectionDialogProps {
   open: boolean;
@@ -20,6 +22,10 @@ interface InjectionDialogProps {
 }
 
 export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
+  const { language } = useLanguage();
+  const t = translations[language];
+  const locale = language === "ru" ? ru : enUS;
+  
   const [injections, setInjections] = useLocalStorage("injections", []);
   const [date, setDate] = useState<Date>(new Date());
   const [dose, setDose] = useState("");
@@ -28,17 +34,17 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
 
   const doseOptions = ["0.25", "0.5", "1", "1.5"];
   const siteOptions = [
-    "Живот справа",
-    "Живот слева", 
-    "Рука слева",
-    "Рука справа"
+    t.stomachRight,
+    t.stomachLeft,
+    t.armLeft,
+    t.armRight
   ];
 
   const handleSave = () => {
     if (!dose || !site) {
       toast({
-        title: "Ошибка",
-        description: "Заполните все обязательные поля",
+        title: t.error,
+        description: t.fillRequired,
         variant: "destructive",
       });
       return;
@@ -61,8 +67,8 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
     setComment("");
     
     toast({
-      title: "Инъекция записана",
-      description: `Доза ${dose}мг, место: ${site}`,
+      title: t.injectionLogged,
+      description: `${t.doseField}: ${dose}мг, ${t.siteField}: ${site}`,
     });
     
     onOpenChange(false);
@@ -72,12 +78,12 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Добавить инъекцию</DialogTitle>
+          <DialogTitle>{t.addInjectionTitle}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
           <div>
-            <Label>Дата укола</Label>
+            <Label>{t.injectionDate}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -88,7 +94,7 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP", { locale: ru }) : "Выберите дату"}
+                  {date ? format(date, "PPP", { locale }) : t.selectDate}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -104,15 +110,15 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
           </div>
 
           <div>
-            <Label>Доза (мг)</Label>
+            <Label>{t.dose}</Label>
             <Select value={dose} onValueChange={setDose}>
               <SelectTrigger>
-                <SelectValue placeholder="Выберите дозу" />
+                <SelectValue placeholder={t.selectDose} />
               </SelectTrigger>
               <SelectContent>
                 {doseOptions.map((option) => (
                   <SelectItem key={option} value={option}>
-                    {option} мг
+                    {option} {language === "ru" ? "мг" : "mg"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -120,10 +126,10 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
           </div>
 
           <div>
-            <Label>Место укола</Label>
+            <Label>{t.injectionSite}</Label>
             <Select value={site} onValueChange={setSite}>
               <SelectTrigger>
-                <SelectValue placeholder="Выберите место" />
+                <SelectValue placeholder={t.selectSite} />
               </SelectTrigger>
               <SelectContent>
                 {siteOptions.map((option) => (
@@ -136,10 +142,10 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
           </div>
 
           <div>
-            <Label htmlFor="comment">Комментарий ощущений</Label>
+            <Label htmlFor="comment">{t.commentFeelings}</Label>
             <Textarea
               id="comment"
-              placeholder="Опишите ощущения после укола..."
+              placeholder={t.describeFeeling}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
@@ -148,10 +154,10 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
 
           <div className="flex gap-3">
             <Button onClick={handleSave} className="flex-1">
-              Сохранить
+              {t.save}
             </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-              Отмена
+              {t.cancel}
             </Button>
           </div>
         </div>

@@ -10,8 +10,13 @@ import { InjectionDialog } from "@/components/dialogs/InjectionDialog";
 import { WeightDialog } from "@/components/dialogs/WeightDialog";
 import { SideEffectDialog } from "@/components/dialogs/SideEffectDialog";
 import { InjectionSiteDialog } from "@/components/dialogs/InjectionSiteDialog";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translations } from "@/lib/translations";
 
 export default function Home() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  
   const [injectionDialogOpen, setInjectionDialogOpen] = useState(false);
   const [weightDialogOpen, setWeightDialogOpen] = useState(false);
   const [sideEffectDialogOpen, setSideEffectDialogOpen] = useState(false);
@@ -20,29 +25,29 @@ export default function Home() {
   const widgets = [
     {
       icon: Syringe,
-      title: "Инъекции",
-      description: "Добавить запись о уколе",
+      title: t.injections,
+      description: t.addInjection,
       color: "text-medical-primary",
       onClick: () => setInjectionDialogOpen(true),
     },
     {
       icon: Weight,
-      title: "Вес",
-      description: "Записать текущий вес",
+      title: t.weight,
+      description: t.recordWeight,
       color: "text-medical-success",
       onClick: () => setWeightDialogOpen(true),
     },
     {
       icon: AlertTriangle,
-      title: "Побочный эффект",
-      description: "Отметить состояние",
+      title: t.logSideEffect,
+      description: t.markCondition,
       color: "text-medical-warning",
       onClick: () => setSideEffectDialogOpen(true),
     },
     {
       icon: Target,
-      title: "Места инъекций",
-      description: "Схема тела",
+      title: t.injectionSites,
+      description: t.bodyDiagram,
       color: "text-medical-info",
       onClick: () => setInjectionSiteDialogOpen(true),
     },
@@ -63,13 +68,13 @@ export default function Home() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-medical-primary" />
-              Динамика веса
+              {t.weightDynamics}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <MiniChart />
             <Button variant="outline" className="w-full mt-4">
-              Посмотреть всё
+              {t.viewAll}
             </Button>
           </CardContent>
         </Card>

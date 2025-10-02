@@ -1,8 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Syringe, Weight, FileText } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translations } from "@/lib/translations";
 
 export function StatsBar() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  
   const [injections] = useLocalStorage("injections", []);
   const [weights] = useLocalStorage("weights", []);
   const [sideEffects] = useLocalStorage("sideEffects", []);
@@ -14,7 +19,7 @@ export function StatsBar() {
   const stats = [
     {
       icon: Syringe,
-      label: "Всего",
+      label: t.total,
       value: totalInjections,
       color: "text-medical-primary",
     },
@@ -26,7 +31,7 @@ export function StatsBar() {
     },
     {
       icon: FileText,
-      label: "Записи",
+      label: t.records,
       value: totalRecords,
       color: "text-medical-info",
     },

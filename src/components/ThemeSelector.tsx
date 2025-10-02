@@ -3,8 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Sun, Moon, Monitor, Palette } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translations } from "@/lib/translations";
 
 export function ThemeSelector() {
+  const { language } = useLanguage();
+  const t = translations[language];
   const { theme, setTheme } = useTheme();
   const [customColors, setCustomColors] = useLocalStorage("customColors", {
     primary: "#0066cc",
@@ -13,9 +17,9 @@ export function ThemeSelector() {
   });
 
   const themes = [
-    { value: "light", label: "Светлая", icon: Sun },
-    { value: "dark", label: "Темная", icon: Moon },
-    { value: "system", label: "Системная", icon: Monitor },
+    { value: "light", label: t.light, icon: Sun },
+    { value: "dark", label: t.dark, icon: Moon },
+    { value: "system", label: t.system, icon: Monitor },
   ];
 
   return (
@@ -23,12 +27,12 @@ export function ThemeSelector() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Palette className="w-5 h-5 text-medical-primary" />
-          Тема и персонализация
+          {t.themePersonalization}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <h4 className="font-medium mb-3">Тема приложения</h4>
+          <h4 className="font-medium mb-3">{t.appTheme}</h4>
           <div className="grid grid-cols-3 gap-2">
             {themes.map(({ value, label, icon: Icon }) => (
               <Button
@@ -45,10 +49,10 @@ export function ThemeSelector() {
         </div>
 
         <div>
-          <h4 className="font-medium mb-3">Цветовая схема</h4>
+          <h4 className="font-medium mb-3">{t.colorScheme}</h4>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm">Основной цвет</span>
+              <span className="text-sm">{t.primaryColor}</span>
               <input
                 type="color"
                 value={customColors.primary}
@@ -57,7 +61,7 @@ export function ThemeSelector() {
               />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm">Акцентный цвет</span>
+              <span className="text-sm">{t.accentColor}</span>
               <input
                 type="color"
                 value={customColors.accent}
@@ -66,7 +70,7 @@ export function ThemeSelector() {
               />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm">Цвет предупреждений</span>
+              <span className="text-sm">{t.warningColor}</span>
               <input
                 type="color"
                 value={customColors.warning}
@@ -78,7 +82,7 @@ export function ThemeSelector() {
         </div>
 
         <div className="pt-4 border-t">
-          <h4 className="font-medium mb-2">Предварительный просмотр</h4>
+          <h4 className="font-medium mb-2">{t.preview}</h4>
           <div className="p-4 border rounded-lg space-y-2">
             <div 
               className="h-4 rounded" 

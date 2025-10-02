@@ -7,10 +7,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { ru } from "date-fns/locale";
+import { ru, enUS } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translations } from "@/lib/translations";
 
 interface SideEffectDialogProps {
   open: boolean;
@@ -18,6 +20,10 @@ interface SideEffectDialogProps {
 }
 
 export function SideEffectDialog({ open, onOpenChange }: SideEffectDialogProps) {
+  const { language } = useLanguage();
+  const t = translations[language];
+  const locale = language === "ru" ? ru : enUS;
+  
   const [sideEffects, setSideEffects] = useLocalStorage("sideEffects", []);
   const [date, setDate] = useState<Date>(new Date());
   const [description, setDescription] = useState("");
@@ -25,8 +31,8 @@ export function SideEffectDialog({ open, onOpenChange }: SideEffectDialogProps) 
   const handleSave = () => {
     if (!description.trim()) {
       toast({
-        title: "Ошибка",
-        description: "Введите описание побочного эффекта",
+        title: t.error,
+        description: t.enterDescription,
         variant: "destructive",
       });
       return;
@@ -45,8 +51,8 @@ export function SideEffectDialog({ open, onOpenChange }: SideEffectDialogProps) 
     setDescription("");
     
     toast({
-      title: "Побочный эффект записан",
-      description: "Запись успешно сохранена",
+      title: t.sideEffectLogged,
+      description: t.recordSaved,
     });
     
     onOpenChange(false);
@@ -56,12 +62,12 @@ export function SideEffectDialog({ open, onOpenChange }: SideEffectDialogProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Записать побочный эффект</DialogTitle>
+          <DialogTitle>{t.logSideEffectTitle}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
           <div>
-            <Label>Дата наблюдения</Label>
+            <Label>{t.observationDate}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -72,7 +78,7 @@ export function SideEffectDialog({ open, onOpenChange }: SideEffectDialogProps) 
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP", { locale: ru }) : "Выберите дату"}
+                  {date ? format(date, "PPP", { locale }) : t.selectDate}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -88,10 +94,10 @@ export function SideEffectDialog({ open, onOpenChange }: SideEffectDialogProps) 
           </div>
 
           <div>
-            <Label htmlFor="description">Описание состояния и комментарии</Label>
+            <Label htmlFor="description">{t.descriptionComments}</Label>
             <Textarea
               id="description"
-              placeholder="Опишите наблюдаемые побочные эффекты, самочувствие, изменения в состоянии..."
+              placeholder={t.describeSideEffects}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
@@ -100,10 +106,10 @@ export function SideEffectDialog({ open, onOpenChange }: SideEffectDialogProps) 
 
           <div className="flex gap-3">
             <Button onClick={handleSave} className="flex-1">
-              Сохранить
+              {t.save}
             </Button>
             <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
-              Отмена
+              {t.cancel}
             </Button>
           </div>
         </div>
