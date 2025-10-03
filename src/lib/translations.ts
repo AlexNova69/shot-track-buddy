@@ -137,6 +137,11 @@ export const translations = {
     weightRecords: "Записей веса",
     sideEffectsRecords: "Побочных эффектов",
     avgDose: "Средняя доза",
+    totalDose: "Общая доза",
+    weightLossProgress: "Прогресс снижения веса",
+    lostOf: "Потеряно",
+    ofGoal: "из",
+    startRecording: "Начните записывать вес для отслеживания прогресса",
     
     // History page
     recordsHistory: "История записей",
@@ -382,6 +387,11 @@ export const translations = {
     weightRecords: "Weight Records",
     sideEffectsRecords: "Side Effects",
     avgDose: "Avg Dose",
+    totalDose: "Total Dose",
+    weightLossProgress: "Weight Loss Progress",
+    lostOf: "Lost",
+    ofGoal: "of",
+    startRecording: "Start recording weight to track progress",
     
     // History page
     recordsHistory: "Records History",

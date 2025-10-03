@@ -3,8 +3,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart } from "recharts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { TrendingDown, Syringe, Activity, Target, MapPin, Calendar } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
+import { translations } from "@/lib/translations";
 
 export default function Charts() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  const locale = language === "ru" ? "ru-RU" : "en-US";
+  
   const [weights] = useLocalStorage("weights", []);
   const [injections] = useLocalStorage("injections", []);
   const [sideEffects] = useLocalStorage("sideEffects", []);
@@ -12,7 +18,7 @@ export default function Charts() {
 
   const weightData = weights
     .map((entry: any) => ({
-      date: new Date(entry.date).toLocaleDateString("ru-RU", { month: "short", day: "numeric" }),
+      date: new Date(entry.date).toLocaleDateString(locale, { month: "short", day: "numeric" }),
       weight: parseFloat(entry.weight),
       fullDate: new Date(entry.date),
     }))
@@ -28,7 +34,7 @@ export default function Charts() {
 
   const injectionData = injections
     .reduce((acc: any[], curr: any) => {
-      const date = new Date(curr.date).toLocaleDateString("ru-RU", { month: "short", day: "numeric" });
+      const date = new Date(curr.date).toLocaleDateString(locale, { month: "short", day: "numeric" });
       const existing = acc.find(item => item.date === date);
       if (existing) {
         existing.count += 1;
@@ -46,7 +52,7 @@ export default function Charts() {
 
   const doseData = injections
     .map((entry: any) => ({
-      date: new Date(entry.date).toLocaleDateString("ru-RU", { month: "short", day: "numeric" }),
+      date: new Date(entry.date).toLocaleDateString(locale, { month: "short", day: "numeric" }),
       dose: parseFloat(entry.dose),
     }))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -64,7 +70,7 @@ export default function Charts() {
 
   // Side effects frequency
   const sideEffectsData = sideEffects.reduce((acc: any[], curr: any) => {
-    const month = new Date(curr.date).toLocaleDateString("ru-RU", { month: "short" });
+    const month = new Date(curr.date).toLocaleDateString(locale, { month: "short" });
     const existing = acc.find(item => item.month === month);
     if (existing) {
       existing.count += 1;
@@ -84,7 +90,7 @@ export default function Charts() {
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-6">Графики и аналитика</h2>
+      <h2 className="text-2xl font-bold mb-6">{t.chartsAnalytics}</h2>
       
       {/* Progress Cards */}
       {weightProgress && (
@@ -93,8 +99,8 @@ export default function Charts() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Потеряно</p>
-                  <p className="text-2xl font-bold text-medical-success">{weightProgress.lost.toFixed(1)} кг</p>
+                  <p className="text-sm text-muted-foreground">{t.lost}</p>
+                  <p className="text-2xl font-bold text-medical-success">{weightProgress.lost.toFixed(1)} {language === "ru" ? "кг" : "kg"}</p>
                 </div>
                 <TrendingDown className="w-8 h-8 text-medical-success" />
               </div>
@@ -104,8 +110,8 @@ export default function Charts() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Текущий</p>
-                  <p className="text-2xl font-bold">{weightProgress.current} кг</p>
+                  <p className="text-sm text-muted-foreground">{t.current}</p>
+                  <p className="text-2xl font-bold">{weightProgress.current} {language === "ru" ? "кг" : "kg"}</p>
                 </div>
                 <Activity className="w-8 h-8 text-medical-primary" />
               </div>
@@ -115,8 +121,8 @@ export default function Charts() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Цель</p>
-                  <p className="text-2xl font-bold text-medical-info">{weightProgress.target} кг</p>
+                  <p className="text-sm text-muted-foreground">{t.goal}</p>
+                  <p className="text-2xl font-bold text-medical-info">{weightProgress.target} {language === "ru" ? "кг" : "kg"}</p>
                 </div>
                 <Target className="w-8 h-8 text-medical-info" />
               </div>
@@ -126,9 +132,9 @@ export default function Charts() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Осталось</p>
+                  <p className="text-sm text-muted-foreground">{t.remaining}</p>
                   <p className="text-2xl font-bold text-medical-warning">
-                    {Math.max(0, weightProgress.current - weightProgress.target).toFixed(1)} кг
+                    {Math.max(0, weightProgress.current - weightProgress.target).toFixed(1)} {language === "ru" ? "кг" : "kg"}
                   </p>
                 </div>
                 <Calendar className="w-8 h-8 text-medical-warning" />
@@ -142,23 +148,23 @@ export default function Charts() {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="weight" className="flex items-center gap-1">
             <TrendingDown className="w-4 h-4" />
-            <span className="hidden sm:inline">Вес</span>
+            <span className="hidden sm:inline">{language === "ru" ? "Вес" : "Weight"}</span>
           </TabsTrigger>
           <TabsTrigger value="injections" className="flex items-center gap-1">
             <Syringe className="w-4 h-4" />
-            <span className="hidden sm:inline">Инъекции</span>
+            <span className="hidden sm:inline">{t.injections}</span>
           </TabsTrigger>
           <TabsTrigger value="dose" className="flex items-center gap-1">
             <Activity className="w-4 h-4" />
-            <span className="hidden sm:inline">Дозы</span>
+            <span className="hidden sm:inline">{language === "ru" ? "Дозы" : "Doses"}</span>
           </TabsTrigger>
           <TabsTrigger value="sites" className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
-            <span className="hidden sm:inline">Места</span>
+            <span className="hidden sm:inline">{language === "ru" ? "Места" : "Sites"}</span>
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-1">
             <Target className="w-4 h-4" />
-            <span className="hidden sm:inline">Анализ</span>
+            <span className="hidden sm:inline">{language === "ru" ? "Анализ" : "Analytics"}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -167,7 +173,7 @@ export default function Charts() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-medical-success" />
-                Динамика веса с трендом
+                {t.weightDynamicsWithTrend}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -197,8 +203,8 @@ export default function Charts() {
                         borderRadius: '8px'
                       }}
                       formatter={(value: any, name: string) => [
-                        `${value} кг`, 
-                        name === 'weight' ? 'Вес' : 'Изменение'
+                        `${value} ${language === "ru" ? "кг" : "kg"}`, 
+                        name === 'weight' ? (language === "ru" ? 'Вес' : 'Weight') : (language === "ru" ? 'Изменение' : 'Change')
                       ]}
                     />
                     <Area
@@ -220,7 +226,7 @@ export default function Charts() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                  Нет данных о весе
+                  {t.noWeightData}
                 </div>
               )}
             </CardContent>
@@ -232,7 +238,7 @@ export default function Charts() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Syringe className="w-5 h-5 text-medical-primary" />
-                Количество инъекций
+                {t.injectionCount}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -265,7 +271,7 @@ export default function Charts() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  Нет данных об инъекциях
+                  {t.noInjectionData}
                 </div>
               )}
             </CardContent>
@@ -277,7 +283,7 @@ export default function Charts() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="w-5 h-5 text-medical-info" />
-                Динамика дозировки
+                {t.dosageDynamics}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -312,7 +318,7 @@ export default function Charts() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  Нет данных о дозировке
+                  {t.noDosageData}
                 </div>
               )}
             </CardContent>
@@ -324,7 +330,7 @@ export default function Charts() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-medical-primary" />
-                Использование мест инъекций
+                {t.injectionSitesUsage}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -365,7 +371,7 @@ export default function Charts() {
                 </div>
               ) : (
                 <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                  Нет данных о местах инъекций
+                  {t.noSitesData}
                 </div>
               )}
             </CardContent>
@@ -376,7 +382,7 @@ export default function Charts() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Побочные эффекты по месяцам</CardTitle>
+                <CardTitle className="text-lg">{t.sideEffectsByMonth}</CardTitle>
               </CardHeader>
               <CardContent>
                 {sideEffectsData.length > 0 ? (
@@ -391,7 +397,7 @@ export default function Charts() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-[200px] flex items-center justify-center text-muted-foreground">
-                    Нет данных о побочных эффектах
+                    {t.noSideEffectsData}
                   </div>
                 )}
               </CardContent>
@@ -399,33 +405,33 @@ export default function Charts() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Статистика</CardTitle>
+                <CardTitle className="text-lg">{t.statistics}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 bg-medical-primary/10 rounded">
                     <p className="text-2xl font-bold text-medical-primary">{injections.length}</p>
-                    <p className="text-sm text-muted-foreground">Всего инъекций</p>
+                    <p className="text-sm text-muted-foreground">{t.totalInjections}</p>
                   </div>
                   <div className="text-center p-3 bg-medical-success/10 rounded">
                     <p className="text-2xl font-bold text-medical-success">{weights.length}</p>
-                    <p className="text-sm text-muted-foreground">Записей веса</p>
+                    <p className="text-sm text-muted-foreground">{t.weightRecords}</p>
                   </div>
                   <div className="text-center p-3 bg-medical-warning/10 rounded">
                     <p className="text-2xl font-bold text-medical-warning">{sideEffects.length}</p>
-                    <p className="text-sm text-muted-foreground">Побочных эффектов</p>
+                    <p className="text-sm text-muted-foreground">{t.sideEffectsRecords}</p>
                   </div>
                   <div className="text-center p-3 bg-medical-info/10 rounded">
                     <p className="text-2xl font-bold text-medical-info">
                       {injections.length > 0 ? Math.round(injections.reduce((sum, inj) => sum + parseFloat(inj.dose), 0) * 10) / 10 : 0}
                     </p>
-                    <p className="text-sm text-muted-foreground">Общая доза</p>
+                    <p className="text-sm text-muted-foreground">{t.totalDose}</p>
                   </div>
                 </div>
                 
                 {weightProgress && (
                   <div className="mt-4 p-3 bg-gradient-to-r from-medical-success/10 to-medical-info/10 rounded">
-                    <h4 className="font-medium mb-2">Прогресс снижения веса</h4>
+                    <h4 className="font-medium mb-2">{t.weightLossProgress}</h4>
                     <div className="w-full bg-background rounded-full h-2">
                       <div 
                         className="bg-gradient-to-r from-medical-success to-medical-info h-2 rounded-full transition-all duration-500"
@@ -436,8 +442,8 @@ export default function Charts() {
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">
                       {weightProgress.lost > 0 
-                        ? `Потеряно ${weightProgress.lost.toFixed(1)} кг из ${(weightProgress.initial - weightProgress.target).toFixed(1)} кг цели`
-                        : 'Начните записывать вес для отслеживания прогресса'
+                        ? `${t.lostOf} ${weightProgress.lost.toFixed(1)} ${language === "ru" ? "кг" : "kg"} ${t.ofGoal} ${(weightProgress.initial - weightProgress.target).toFixed(1)} ${language === "ru" ? "кг цели" : "kg goal"}`
+                        : t.startRecording
                       }
                     </p>
                   </div>
