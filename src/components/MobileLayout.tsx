@@ -15,7 +15,7 @@ export function MobileLayout({ children }: MobileLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-card border-b border-border px-4 py-6">
+      <header className="bg-card border-b border-border px-4 py-5">
         <div className="flex items-center gap-3">
           <img src={appLogo} alt="Logo" className="w-8 h-8" />
           <h1 className="text-xl font-semibold text-medical-primary">{t.appName}</h1>

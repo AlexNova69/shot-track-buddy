@@ -39,8 +39,8 @@ export default function Profile() {
   const handleSave = () => {
     setProfile(formData);
     toast({
-      title: "Профиль сохранен",
-      description: "Данные успешно обновлены",
+      title: t.profileSaved,
+      description: t.dataSavedSuccess,
     });
   };
 
@@ -49,8 +49,8 @@ export default function Profile() {
     
     if (!gender || !age || !height || !currentWeight) {
       toast({
-        title: "Ошибка",
-        description: "Заполните все поля для расчета",
+        title: t.error,
+        description: t.fillAllFields,
         variant: "destructive",
       });
       return;
@@ -70,8 +70,8 @@ export default function Profile() {
 
     setFormData({ ...formData, bmr: Math.round(bmr).toString() });
     toast({
-      title: "BMR рассчитан",
-      description: `Ваш базовый метаболизм: ${Math.round(bmr)} ккал/день`,
+      title: t.bmrCalculated,
+      description: `${t.bmrResult}: ${Math.round(bmr)} ${t.kcalPerDay}`,
     });
   };
 
@@ -99,8 +99,8 @@ export default function Profile() {
     localStorage.removeItem("notifications");
     
     toast({
-      title: "Данные удалены",
-      description: "Все данные пользователя очищены",
+      title: t.dataDeleted,
+      description: t.allDataCleared,
     });
   };
 
@@ -141,11 +141,11 @@ export default function Profile() {
   return (
     <div className="p-4 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Профиль</h2>
+        <h2 className="text-2xl font-bold">{t.profile}</h2>
         {formData.bmr && (
           <div className="text-right">
             <p className="text-sm text-muted-foreground">BMR</p>
-            <p className="text-lg font-semibold text-medical-primary">{formData.bmr} ккал</p>
+            <p className="text-lg font-semibold text-medical-primary">{formData.bmr} {t.kcal}</p>
           </div>
         )}
       </div>
@@ -154,19 +154,19 @@ export default function Profile() {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile" className="flex items-center gap-1">
             <User className="w-4 h-4" />
-            <span className="hidden sm:inline">Профиль</span>
+            <span className="hidden sm:inline">{t.profile}</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-1">
             <Bell className="w-4 h-4" />
-            <span className="hidden sm:inline">Уведомления</span>
+            <span className="hidden sm:inline">{t.notifications}</span>
           </TabsTrigger>
           <TabsTrigger value="export" className="flex items-center gap-1">
             <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Экспорт</span>
+            <span className="hidden sm:inline">{t.export}</span>
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-1">
             <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">Настройки</span>
+            <span className="hidden sm:inline">{t.settings}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -175,95 +175,95 @@ export default function Profile() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="w-5 h-5 text-medical-primary" />
-                Личные данные
+                {t.personalData}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Имя пользователя</Label>
+                <Label htmlFor="name">{t.username}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Введите ваше имя"
+                  placeholder={t.enterName}
                 />
               </div>
 
               <div>
-                <Label>Пол</Label>
+                <Label>{t.gender}</Label>
                 <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Выберите пол" />
+                    <SelectValue placeholder={t.selectGender} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Мужчина</SelectItem>
-                    <SelectItem value="female">Женщина</SelectItem>
+                    <SelectItem value="male">{t.male}</SelectItem>
+                    <SelectItem value="female">{t.female}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="age">Возраст</Label>
+                  <Label htmlFor="age">{t.age}</Label>
                   <Input
                     id="age"
                     type="number"
                     value={formData.age}
                     onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    placeholder="Лет"
+                    placeholder={t.years}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="height">Рост</Label>
+                  <Label htmlFor="height">{t.height}</Label>
                   <Input
                     id="height"
                     type="number"
                     value={formData.height}
                     onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                    placeholder="см"
+                    placeholder={t.cm}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="currentWeight">Текущий вес</Label>
+                  <Label htmlFor="currentWeight">{t.currentWeight}</Label>
                   <Input
                     id="currentWeight"
                     type="number"
                     step="0.1"
                     value={formData.currentWeight}
                     onChange={(e) => setFormData({ ...formData, currentWeight: e.target.value })}
-                    placeholder="кг"
+                    placeholder={t.kg}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="targetWeight">Желаемый вес</Label>
+                  <Label htmlFor="targetWeight">{t.targetWeight}</Label>
                   <Input
                     id="targetWeight"
                     type="number"
                     step="0.1"
                     value={formData.targetWeight}
                     onChange={(e) => setFormData({ ...formData, targetWeight: e.target.value })}
-                    placeholder="кг"
+                    placeholder={t.kg}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="medication">Препарат</Label>
+                <Label htmlFor="medication">{t.medication}</Label>
                 <Input
                   id="medication"
                   value={formData.medication}
                   onChange={(e) => setFormData({ ...formData, medication: e.target.value })}
-                  placeholder="Название препарата или действующее вещество"
+                  placeholder={t.medicationPlaceholder}
                 />
               </div>
 
               {/* Custom Fields */}
               {formData.customFields && formData.customFields.length > 0 && (
                 <div className="space-y-3">
-                  <Label>Дополнительные поля</Label>
+                  <Label>{t.additionalFields}</Label>
                   {formData.customFields.map((field) => (
                     <div key={field.id} className="flex items-center gap-2">
                       <Input
@@ -287,12 +287,12 @@ export default function Profile() {
 
               {/* Add Custom Field */}
               <div className="border-t pt-4">
-                <Label className="mb-2 block">Добавить поле</Label>
+                <Label className="mb-2 block">{t.addField}</Label>
                 <div className="flex gap-2">
                   <Input
                     value={newField.name}
                     onChange={(e) => setNewField({ ...newField, name: e.target.value })}
-                    placeholder="Название поля"
+                    placeholder={t.fieldName}
                     className="flex-1"
                   />
                   <Select value={newField.type} onValueChange={(value: any) => setNewField({ ...newField, type: value })}>
@@ -300,13 +300,13 @@ export default function Profile() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="text">Текст</SelectItem>
-                      <SelectItem value="number">Число</SelectItem>
-                      <SelectItem value="date">Дата</SelectItem>
+                      <SelectItem value="text">{t.text}</SelectItem>
+                      <SelectItem value="number">{t.number}</SelectItem>
+                      <SelectItem value="date">{t.dateField}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button onClick={addCustomField} size="sm">
-                    Добавить
+                    {t.add}
                   </Button>
                 </div>
               </div>
@@ -314,10 +314,10 @@ export default function Profile() {
               <div className="flex gap-3">
                 <Button onClick={calculateBMR} className="flex items-center gap-2">
                   <Calculator className="w-4 h-4" />
-                  Рассчитать BMR
+                  {t.calculateBMR}
                 </Button>
                 <Button onClick={handleSave} variant="outline">
-                  Сохранить
+                  {t.save}
                 </Button>
               </div>
             </CardContent>
@@ -327,27 +327,27 @@ export default function Profile() {
             <CardHeader>
               <CardTitle className="text-destructive flex items-center gap-2">
                 <Trash2 className="w-5 h-5" />
-                Опасная зона
+                {t.dangerZone}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" className="w-full">
-                    Удалить все данные пользователя
+                    {t.deleteAllData}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+                    <AlertDialogTitle>{t.areYouSure}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Это действие нельзя отменить. Будут удалены все данные о инъекциях, весе, побочных эффектах и настройки профиля.
+                      {t.deleteWarning}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Отмена</AlertDialogCancel>
+                    <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
                     <AlertDialogAction onClick={deleteProfile} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      Удалить
+                      {t.delete}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
