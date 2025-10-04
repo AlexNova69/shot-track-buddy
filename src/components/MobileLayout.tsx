@@ -32,13 +32,13 @@ export function MobileLayout({ children }: MobileLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-card border-b border-border px-4 py-12">
-        <div className="flex items-end justify-between h-full">
-          <div className="flex items-center gap-3">
-            <img src={appLogo} alt="Logo" className="w-8 h-8" />
-            <h1 className="text-xl font-semibold text-medical-primary">{t.appName}</h1>
+      <header className="bg-card border-b border-border px-4 pt-4 pb-4">
+        <div className="flex items-end justify-between h-full min-h-[60px]">
+          <div className="flex items-end gap-3">
+            <img src={appLogo} alt="Logo" className="w-8 h-8 mb-0.5" />
+            <h1 className="text-xl font-semibold text-medical-primary leading-none">{t.appName}</h1>
           </div>
-          <p className="text-sm text-muted-foreground">{getGreeting()}</p>
+          <p className="text-sm text-muted-foreground leading-none">{getGreeting()}</p>
         </div>
       </header>
       
