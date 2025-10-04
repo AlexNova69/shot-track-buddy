@@ -25,7 +25,7 @@ export function StatsBar() {
     },
     {
       icon: Weight,
-      label: "кг",
+      label: t.kg,
       value: latestWeight,
       color: "text-medical-success",
     },

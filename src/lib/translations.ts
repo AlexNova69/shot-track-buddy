@@ -275,6 +275,13 @@ export const translations = {
     areYouSure: "Вы уверены?",
     deleteWarning: "Это действие нельзя отменить. Будут удалены все данные о инъекциях, весе, побочных эффектах и настройки профиля.",
     delete: "Удалить",
+    
+    // Greetings
+    user: "Пользователь",
+    goodMorning: "Доброе утро",
+    goodAfternoon: "Добрый день",
+    goodEvening: "Добрый вечер",
+    goodNight: "Доброй ночи",
   },
   en: {
     // App
@@ -552,6 +559,13 @@ export const translations = {
     areYouSure: "Are you sure?",
     deleteWarning: "This action cannot be undone. All data about injections, weight, side effects and profile settings will be deleted.",
     delete: "Delete",
+    
+    // Greetings
+    user: "User",
+    goodMorning: "Good morning",
+    goodAfternoon: "Good afternoon",
+    goodEvening: "Good evening",
+    goodNight: "Good night",
   },
 };
 

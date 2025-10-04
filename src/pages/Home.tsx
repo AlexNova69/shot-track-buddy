@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Syringe, Weight, AlertTriangle, Target, TrendingUp } from "lucide-react";
@@ -14,6 +15,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { translations } from "@/lib/translations";
 
 export default function Home() {
+  const navigate = useNavigate();
   const { language } = useLanguage();
   const t = translations[language];
   
@@ -73,7 +75,7 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <MiniChart />
-            <Button variant="outline" className="w-full mt-4">
+            <Button variant="outline" className="w-full mt-4" onClick={() => navigate('/charts')}>
               {t.viewAll}
             </Button>
           </CardContent>
