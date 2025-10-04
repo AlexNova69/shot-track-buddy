@@ -2,11 +2,16 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "@/hooks/use-toast";
 import bodyDiagram from "@/assets/body-diagram.png";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translations } from "@/lib/translations";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface InjectionSiteDialogProps {
   open: boolean;
@@ -26,6 +31,7 @@ export function InjectionSiteDialog({ open, onOpenChange }: InjectionSiteDialogP
   
   const [injectionSiteRecords, setInjectionSiteRecords] = useLocalStorage("injectionSites", []);
   const [selectedSite, setSelectedSite] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   const getLastUsedDate = (siteId: string) => {
     const siteRecords = injectionSiteRecords.filter((record: any) => record.site === siteId);
@@ -65,7 +71,7 @@ export function InjectionSiteDialog({ open, onOpenChange }: InjectionSiteDialogP
     
     const newRecord = {
       id: Date.now(),
-      date: new Date().toISOString(),
+      date: selectedDate.toISOString(),
       site: selectedSite,
       siteName: selectedSiteData?.name || "",
     };
@@ -166,6 +172,35 @@ export function InjectionSiteDialog({ open, onOpenChange }: InjectionSiteDialogP
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 rounded-full bg-medical-primary"></div>
               <span>{t.selected}</span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium mb-2 block">{t.injectionDate}</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : <span>{t.pickDate}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 

@@ -72,6 +72,7 @@ export const translations = {
     thigh: "Бедро",
     arm: "Рука",
     condition: "Состояние",
+    pickDate: "Выберите дату",
     
     // Charts
     weightProgress: "Прогресс веса",
@@ -356,6 +357,7 @@ export const translations = {
     thigh: "Thigh",
     arm: "Arm",
     condition: "Condition",
+    pickDate: "Pick a date",
     
     // Charts
     weightProgress: "Weight Progress",
