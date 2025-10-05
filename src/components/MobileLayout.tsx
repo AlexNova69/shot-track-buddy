@@ -32,8 +32,8 @@ export function MobileLayout({ children }: MobileLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-card border-b border-border px-4 pt-8 pb-8">
-        <div className="flex items-end justify-between h-full min-h-[120px]">
+      <header className="bg-card border-b border-border px-4 pt-6 pb-6">
+        <div className="flex items-end justify-between h-full min-h-[84px]">
           <div className="flex items-end gap-3">
             <img src={appLogo} alt="Logo" className="w-8 h-8 mb-0.5" />
             <h1 className="text-xl font-semibold text-medical-primary leading-none">{t.appName}</h1>
