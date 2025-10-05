@@ -1,11 +1,11 @@
 import { useLocalStorage } from "./useLocalStorage";
 
 export function useDataExport() {
-  const [injections] = useLocalStorage("injections", []);
-  const [weights] = useLocalStorage("weights", []);
-  const [sideEffects] = useLocalStorage("sideEffects", []);
-  const [injectionSites] = useLocalStorage("injectionSites", []);
-  const [profile] = useLocalStorage("profile", {});
+  const [injections, setInjections] = useLocalStorage("injections", []);
+  const [weights, setWeights] = useLocalStorage("weights", []);
+  const [sideEffects, setSideEffects] = useLocalStorage("sideEffects", []);
+  const [injectionSites, setInjectionSites] = useLocalStorage("injectionSites", []);
+  const [profile, setProfile] = useLocalStorage("profile", {});
 
   const exportToJSON = () => {
     const data = {
@@ -82,7 +82,29 @@ export function useDataExport() {
       reader.onload = (e) => {
         try {
           const data = JSON.parse(e.target?.result as string);
-          // Here you would validate and import the data
+          
+          // Validate data structure
+          if (!data || typeof data !== 'object') {
+            throw new Error('Invalid data format');
+          }
+
+          // Import data if present
+          if (data.injections && Array.isArray(data.injections)) {
+            setInjections(data.injections);
+          }
+          if (data.weights && Array.isArray(data.weights)) {
+            setWeights(data.weights);
+          }
+          if (data.sideEffects && Array.isArray(data.sideEffects)) {
+            setSideEffects(data.sideEffects);
+          }
+          if (data.injectionSites && Array.isArray(data.injectionSites)) {
+            setInjectionSites(data.injectionSites);
+          }
+          if (data.profile && typeof data.profile === 'object') {
+            setProfile(data.profile);
+          }
+
           resolve(data);
         } catch (error) {
           reject(error);

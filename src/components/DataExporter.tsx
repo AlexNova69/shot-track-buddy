@@ -1,15 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Download, Upload, FileJson, FileSpreadsheet } from "lucide-react";
 import { useDataExport } from "@/hooks/useDataExport";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translations } from "@/lib/translations";
+import { useRef } from "react";
 
 export function DataExporter() {
   const { language } = useLanguage();
   const t = translations[language];
-  const { exportToJSON, exportToCSV } = useDataExport();
+  const { exportToJSON, exportToCSV, importFromJSON } = useDataExport();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportJSON = () => {
     try {
@@ -43,6 +46,33 @@ export function DataExporter() {
     }
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      await importFromJSON(file);
+      toast({
+        title: t.importSuccess || "Данные импортированы",
+        description: t.importSuccessDesc || "Все данные успешно загружены из файла",
+      });
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      toast({
+        title: t.importError || "Ошибка импорта",
+        description: t.importErrorDesc || "Не удалось импортировать данные. Проверьте формат файла.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -54,10 +84,23 @@ export function DataExporter() {
       <CardContent className="space-y-4">
         <div>
           <h4 className="font-medium mb-2">{t.fullExport}</h4>
-          <Button onClick={handleExportJSON} className="w-full flex items-center gap-2">
-            <FileJson className="w-4 h-4" />
-            {t.exportAll}
-          </Button>
+          <div className="space-y-2">
+            <Button onClick={handleExportJSON} className="w-full flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              {t.exportAll}
+            </Button>
+            <Button onClick={handleImportClick} variant="outline" className="w-full flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              {t.importData || "Импортировать данные"}
+            </Button>
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportFile}
+              className="hidden"
+            />
+          </div>
         </div>
         
         <div>

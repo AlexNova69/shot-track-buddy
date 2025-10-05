@@ -213,6 +213,11 @@ export const translations = {
     csvSaved: "CSV файл сохранен на устройство",
     exportError: "Ошибка экспорта",
     exportFailed: "Не удалось экспортировать данные",
+    importData: "Импортировать данные",
+    importSuccess: "Данные импортированы",
+    importSuccessDesc: "Все данные успешно загружены из файла",
+    importError: "Ошибка импорта",
+    importErrorDesc: "Не удалось импортировать данные. Проверьте формат файла.",
     
     // Theme selector
     themePersonalization: "Тема и персонализация",
@@ -498,6 +503,11 @@ export const translations = {
     csvSaved: "CSV file saved to device",
     exportError: "Export error",
     exportFailed: "Failed to export data",
+    importData: "Import Data",
+    importSuccess: "Data imported",
+    importSuccessDesc: "All data successfully loaded from file",
+    importError: "Import error",
+    importErrorDesc: "Failed to import data. Please check the file format.",
     
     // Theme selector
     themePersonalization: "Theme and Personalization",
