@@ -9,8 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, Calculator, Trash2, Settings, Bell, Download } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useLanguage } from "@/hooks/useLanguage";
-import { useAppVersion } from "@/hooks/useAppVersion";
 import { toast } from "@/hooks/use-toast";
+import { APP_VERSION } from "@/lib/version";
 import { NotificationManager } from "@/components/NotificationManager";
 import { DataExporter } from "@/components/DataExporter";
 import { ThemeSelector } from "@/components/ThemeSelector";
@@ -20,7 +20,6 @@ import { Separator } from "@/components/ui/separator";
 
 export default function Profile() {
   const { language } = useLanguage();
-  const { version, incrementVersion } = useAppVersion();
   const t = translations[language];
   
   const [profile, setProfile] = useLocalStorage("profile", {
@@ -40,7 +39,6 @@ export default function Profile() {
 
   const handleSave = () => {
     setProfile(formData);
-    const newVersion = incrementVersion();
     toast({
       title: t.profileSaved,
       description: t.dataSavedSuccess,
@@ -382,7 +380,7 @@ export default function Profile() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div>
-            <p className="font-medium">{t.appVersion}: {version}</p>
+            <p className="font-medium">{t.appVersion}: {APP_VERSION}</p>
           </div>
           <Separator />
           <div>
