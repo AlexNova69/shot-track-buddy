@@ -1,4 +1,6 @@
 import { useLocalStorage } from "./useLocalStorage";
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Capacitor } from '@capacitor/core';
 
 export function useDataExport() {
   const [injections, setInjections] = useLocalStorage("injections", []);
@@ -7,7 +9,7 @@ export function useDataExport() {
   const [injectionSites, setInjectionSites] = useLocalStorage("injectionSites", []);
   const [profile, setProfile] = useLocalStorage("profile", {});
 
-  const exportToJSON = () => {
+  const exportToJSON = async () => {
     const data = {
       profile,
       injections,
@@ -17,18 +19,35 @@ export function useDataExport() {
       exportDate: new Date().toISOString(),
     };
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
+    const content = JSON.stringify(data, null, 2);
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await Filesystem.writeFile({
+          path: fileName,
+          data: content,
+          directory: Directory.Documents,
+          encoding: Encoding.UTF8,
+        });
+      } catch (error) {
+        console.error('Error writing file:', error);
+        throw error;
+      }
+    } else {
+      const blob = new Blob([content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
 
-  const exportToCSV = (dataType: "injections" | "weights" | "sideEffects") => {
+  const exportToCSV = async (dataType: "injections" | "weights" | "sideEffects") => {
     let data: any[] = [];
     let headers: string[] = [];
 
@@ -65,15 +84,31 @@ export function useDataExport() {
       })
     ].join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${dataType}-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const fileName = `${dataType}-${new Date().toISOString().split('T')[0]}.csv`;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await Filesystem.writeFile({
+          path: fileName,
+          data: csvContent,
+          directory: Directory.Documents,
+          encoding: Encoding.UTF8,
+        });
+      } catch (error) {
+        console.error('Error writing CSV file:', error);
+        throw error;
+      }
+    } else {
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
 
   const importFromJSON = (file: File) => {

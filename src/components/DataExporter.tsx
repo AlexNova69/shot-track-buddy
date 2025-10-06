@@ -14,9 +14,9 @@ export function DataExporter() {
   const { exportToJSON, exportToCSV, importFromJSON } = useDataExport();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExportJSON = () => {
+  const handleExportJSON = async () => {
     try {
-      exportToJSON();
+      await exportToJSON();
       toast({
         title: t.dataExported,
         description: t.jsonSaved,
@@ -30,9 +30,9 @@ export function DataExporter() {
     }
   };
 
-  const handleExportCSV = (dataType: "injections" | "weights" | "sideEffects") => {
+  const handleExportCSV = async (dataType: "injections" | "weights" | "sideEffects") => {
     try {
-      exportToCSV(dataType);
+      await exportToCSV(dataType);
       toast({
         title: t.dataExported,
         description: t.csvSaved,
