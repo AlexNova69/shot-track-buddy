@@ -20,7 +20,7 @@ export const translations = {
     logSideEffect: "Побочный эффект",
     logInjectionSite: "Место укола",
     stats: "Статистика",
-    injections: "Уколов",
+    injections: "Инъекции",
     averageWeight: "Средний вес",
     sideEffects: "Побочных эффектов",
     recentRecords: "Последние записи",
@@ -102,7 +102,7 @@ export const translations = {
     error: "Ошибка",
     
     // Home page widgets
-    addInjection: "Добавить запись о уколе",
+    addInjection: "Добавить инъекцию",
     recordWeight: "Записать текущий вес",
     markCondition: "Отметить состояние",
     bodyDiagram: "Схема тела",
@@ -182,7 +182,7 @@ export const translations = {
     enterDescription: "Введите описание побочного эффекта",
     
     // Injection site dialog
-    selectInjectionSiteTitle: "Выберите место инъекции",
+    selectInjectionSiteTitle: "Настройки мест инъекций",
     bodyDiagramAlt: "Схема тела для инъекций",
     injectionSitesLabel: "Места инъекций:",
     stomachLeft: "Живот слева",
@@ -198,6 +198,14 @@ export const translations = {
     siteLogged: "Место записано",
     markedForNext: "отмечено для следующей инъекции",
     selectSiteError: "Выберите место инъекции",
+    preferredSites: "Предпочитаемые места",
+    selectPreferredSites: "Выберите 2-3 места для ротации",
+    preferredSitesSaved: "Настройки сохранены",
+    rotationReminder: "Памятка о ротации мест инъекций",
+    rotationTips: "🔄 Чередуйте места инъекций для предотвращения липодистрофии\n💉 Не делайте укол в одно место чаще 1 раза в неделю\n📍 Выбирайте разные участки в пределах одной зоны\n⚠️ Избегайте участков с уплотнениями или раздражением",
+    nextSuggested: "Рекомендуется следующее",
+    lastInjection: "Последняя инъекция",
+    suggestedSite: "Рекомендуемое место",
     
     // Data exporter
     exportBackup: "Экспорт и резервное копирование",
@@ -472,7 +480,7 @@ export const translations = {
     enterDescription: "Enter side effect description",
     
     // Injection site dialog
-    selectInjectionSiteTitle: "Select Injection Site",
+    selectInjectionSiteTitle: "Injection Site Settings",
     bodyDiagramAlt: "Body diagram for injections",
     injectionSitesLabel: "Injection Sites:",
     stomachLeft: "Stomach Left",
@@ -488,6 +496,14 @@ export const translations = {
     siteLogged: "Site logged",
     markedForNext: "marked for next injection",
     selectSiteError: "Select injection site",
+    preferredSites: "Preferred Sites",
+    selectPreferredSites: "Select 2-3 sites for rotation",
+    preferredSitesSaved: "Settings saved",
+    rotationReminder: "Injection Site Rotation Reminder",
+    rotationTips: "🔄 Rotate injection sites to prevent lipodystrophy\n💉 Don't inject in the same spot more than once a week\n📍 Choose different areas within the same zone\n⚠️ Avoid areas with lumps or irritation",
+    nextSuggested: "Next suggested",
+    lastInjection: "Last injection",
+    suggestedSite: "Suggested site",
     
     // Data exporter
     exportBackup: "Export and Backup",
