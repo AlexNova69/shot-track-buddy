@@ -224,8 +224,18 @@ export const translations = {
     importData: "Импортировать данные",
     importSuccess: "Данные импортированы",
     importSuccessDesc: "Все данные успешно загружены из файла",
-    importError: "Ошибка импорта",
-    importErrorDesc: "Не удалось импортировать данные. Проверьте формат файла.",
+  importError: "Ошибка импорта",
+  importErrorDesc: "Не удалось импортировать данные. Проверьте формат файла.",
+  recordUpdated: "Запись обновлена",
+  editInjection: "Редактировать инъекцию",
+  editWeight: "Редактировать вес",
+  editSideEffect: "Редактировать побочный эффект",
+  confirmDelete: "Подтвердите удаление",
+  confirmDeleteDesc: "Вы уверены, что хотите удалить эту запись? Это действие нельзя отменить.",
+  delete: "Удалить",
+  recordDeleted: "Запись удалена",
+  recordDeletedSuccess: "Запись успешно удалена",
+  info: "Информация",
     
     // Theme selector
     themePersonalization: "Тема и персонализация",
@@ -288,7 +298,6 @@ export const translations = {
     allDataCleared: "Все данные пользователя очищены",
     areYouSure: "Вы уверены?",
     deleteWarning: "Это действие нельзя отменить. Будут удалены все данные о инъекциях, весе, побочных эффектах и настройки профиля.",
-    delete: "Удалить",
     
     // Greetings
     user: "Пользователь",
@@ -522,8 +531,18 @@ export const translations = {
     importData: "Import Data",
     importSuccess: "Data imported",
     importSuccessDesc: "All data successfully loaded from file",
-    importError: "Import error",
+    importError: "Import Error",
     importErrorDesc: "Failed to import data. Please check the file format.",
+    recordUpdated: "Record Updated",
+    editInjection: "Edit Injection",
+    editWeight: "Edit Weight",
+    editSideEffect: "Edit Side Effect",
+    confirmDelete: "Confirm Deletion",
+    confirmDeleteDesc: "Are you sure you want to delete this record? This action cannot be undone.",
+    delete: "Delete",
+    recordDeleted: "Record Deleted",
+    recordDeletedSuccess: "Record deleted successfully",
+    info: "Information",
     
     // Theme selector
     themePersonalization: "Theme and Personalization",
@@ -586,7 +605,6 @@ export const translations = {
     allDataCleared: "All user data cleared",
     areYouSure: "Are you sure?",
     deleteWarning: "This action cannot be undone. All data about injections, weight, side effects and profile settings will be deleted.",
-    delete: "Delete",
     
     // Greetings
     user: "User",

@@ -20,9 +20,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface InjectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editRecord?: any;
 }
 
-export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
+export function InjectionDialog({ open, onOpenChange, editRecord }: InjectionDialogProps) {
   const { language } = useLanguage();
   const t = translations[language];
   const locale = language === "ru" ? ru : enUS;
@@ -45,9 +46,30 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
     { id: "arm-right", name: t.armRight },
   ];
 
+  // Заполняем форму при редактировании
+  useEffect(() => {
+    if (open && editRecord) {
+      setDate(new Date(editRecord.date));
+      setDose(editRecord.dose);
+      setComment(editRecord.comment || "");
+      
+      // Находим ID места по имени
+      const siteData = allSites.find(s => s.name === editRecord.site);
+      if (siteData) {
+        setSite(siteData.id);
+      }
+    } else if (open && !editRecord) {
+      // Сбрасываем форму для новой записи
+      setDate(new Date());
+      setDose("");
+      setSite("");
+      setComment("");
+    }
+  }, [open, editRecord]);
+
   // Определяем рекомендуемое место
   useEffect(() => {
-    if (open) {
+    if (open && !editRecord) {
       const availableSites = preferredSites.length > 0 
         ? allSites.filter(s => preferredSites.includes(s.id))
         : allSites;
@@ -104,37 +126,65 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
 
     const selectedSiteData = allSites.find(s => s.id === site);
 
-    // Создаем запись инъекции
-    const newInjection = {
-      id: Date.now(),
-      date: date.toISOString(),
-      dose,
-      site: selectedSiteData?.name || site,
-      comment,
-    };
+    if (editRecord) {
+      // Редактирование существующей записи
+      const updatedInjections = injections.map((inj: any) =>
+        inj.id === editRecord.id
+          ? {
+              ...inj,
+              date: date.toISOString(),
+              dose,
+              site: selectedSiteData?.name || site,
+              comment,
+            }
+          : inj
+      );
+      setInjections(updatedInjections);
 
-    setInjections([...injections, newInjection]);
-    
-    // Автоматически создаем запись места укола
-    const newSiteRecord = {
-      id: Date.now() + 1,
-      date: date.toISOString(),
-      site: site,
-      siteName: selectedSiteData?.name || "",
-    };
+      // Обновляем соответствующую запись места укола
+      const updatedSiteRecords = injectionSiteRecords.map((rec: any) =>
+        rec.date === editRecord.date && rec.siteName === editRecord.site
+          ? {
+              ...rec,
+              date: date.toISOString(),
+              site: site,
+              siteName: selectedSiteData?.name || "",
+            }
+          : rec
+      );
+      setInjectionSiteRecords(updatedSiteRecords);
 
-    setInjectionSiteRecords([...injectionSiteRecords, newSiteRecord]);
-    
-    // Reset form
-    setDate(new Date());
-    setDose("");
-    setSite("");
-    setComment("");
-    
-    toast({
-      title: t.injectionLogged,
-      description: `${t.doseField}: ${dose}мг, ${t.siteField}: ${selectedSiteData?.name}`,
-    });
+      toast({
+        title: t.recordUpdated || "Запись обновлена",
+        description: `${t.doseField}: ${dose}мг, ${t.siteField}: ${selectedSiteData?.name}`,
+      });
+    } else {
+      // Создаем новую запись инъекции
+      const newInjection = {
+        id: Date.now(),
+        date: date.toISOString(),
+        dose,
+        site: selectedSiteData?.name || site,
+        comment,
+      };
+
+      setInjections([...injections, newInjection]);
+      
+      // Автоматически создаем запись места укола
+      const newSiteRecord = {
+        id: Date.now() + 1,
+        date: date.toISOString(),
+        site: site,
+        siteName: selectedSiteData?.name || "",
+      };
+
+      setInjectionSiteRecords([...injectionSiteRecords, newSiteRecord]);
+
+      toast({
+        title: t.injectionLogged,
+        description: `${t.doseField}: ${dose}мг, ${t.siteField}: ${selectedSiteData?.name}`,
+      });
+    }
     
     onOpenChange(false);
   };
@@ -147,7 +197,7 @@ export function InjectionDialog({ open, onOpenChange }: InjectionDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{t.addInjectionTitle}</DialogTitle>
+          <DialogTitle>{editRecord ? (t.editInjection || "Редактировать инъекцию") : t.addInjectionTitle}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
