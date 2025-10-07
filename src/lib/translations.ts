@@ -2,7 +2,7 @@ export const translations = {
   ru: {
     // App
     appName: "Трекер инъекций",
-    appDescription: "Приложение для отслеживания уколов GLP-1 (семаглутид) с отслеживанием веса, побочных эффектов, состояния. Возможность просмотра графиков, и дневника. Возможность выгрузки данных в файл. А также расчет BMI.",
+    appDescription: "Приложение для отслеживания уколов GLP-1 (семаглутид) с отслеживанием веса, побочных эффектов, состояния. Возможность просмотра графиков, и дневника. Возможность выгрузки данных в файл. А также расчет BMR.",
     appVersion: "Версия",
     appAuthor: "Автор",
     
@@ -309,7 +309,7 @@ export const translations = {
   en: {
     // App
     appName: "Injection Tracker",
-    appDescription: "An application for tracking GLP-1 (semaglutide) injections with weight tracking, side effects, and condition. The ability to view charts and a diary. The ability to upload data to a file. As well as the BMI calculation.",
+    appDescription: "An application for tracking GLP-1 (semaglutide) injections with weight tracking, side effects, and condition. The ability to view charts and a diary. The ability to upload data to a file. As well as the BMR calculation.",
     appVersion: "Version",
     appAuthor: "Author",
     
