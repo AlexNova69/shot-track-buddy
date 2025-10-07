@@ -12,7 +12,24 @@ interface MobileLayoutProps {
 export function MobileLayout({ children }: MobileLayoutProps) {
   const { language } = useLanguage();
   const t = translations[language];
-  const [profile] = useLocalStorage("profile", { name: "" });
+  const [profile] = useLocalStorage("profile", { name: "", height: "" });
+  const [weights] = useLocalStorage("weights", []);
+
+  const getCurrentBMI = () => {
+    if (weights.length === 0 || !profile.height) return null;
+    
+    const sortedWeights = [...weights].sort((a: any, b: any) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const latestWeight = parseFloat(sortedWeights[0].weight);
+    const heightNum = parseInt(profile.height);
+    
+    if (!latestWeight || !heightNum) return null;
+    
+    const heightInMeters = heightNum / 100;
+    const bmi = latestWeight / (heightInMeters * heightInMeters);
+    return bmi.toFixed(1);
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -38,7 +55,12 @@ export function MobileLayout({ children }: MobileLayoutProps) {
             <img src={appLogo} alt="Logo" className="w-8 h-8 mb-0.5" />
             <h1 className="text-xl font-semibold text-medical-primary leading-none">{t.appName}</h1>
           </div>
-          <p className="text-sm text-muted-foreground leading-none">{getGreeting()}</p>
+          <div className="text-right">
+            {getCurrentBMI() && (
+              <p className="text-xs text-muted-foreground">BMI: <span className="font-semibold text-medical-primary">{getCurrentBMI()}</span></p>
+            )}
+            <p className="text-sm text-muted-foreground leading-none mt-1">{getGreeting()}</p>
+          </div>
         </div>
       </header>
       

@@ -31,8 +31,15 @@ export default function Profile() {
     targetWeight: "",
     medication: "",
     bmr: "",
+    activityLevel: "",
+    tdee: "",
+    deficitCalories: "",
+    maintenanceCalories: "",
+    surplusCalories: "",
     customFields: [] as Array<{ id: string; name: string; value: string; type: "text" | "number" | "date" }>,
   });
+
+  const [weights] = useLocalStorage("weights", []);
 
   const [formData, setFormData] = useState(profile);
   const [newField, setNewField] = useState({ name: "", type: "text" as const });
@@ -45,13 +52,31 @@ export default function Profile() {
     });
   };
 
+  const getLatestWeight = () => {
+    if (weights.length === 0) return null;
+    const sortedWeights = [...weights].sort((a: any, b: any) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    return parseFloat(sortedWeights[0].weight);
+  };
+
   const calculateBMR = () => {
-    const { gender, age, height, currentWeight } = formData;
+    const { gender, age, height, activityLevel } = formData;
+    const latestWeight = getLatestWeight();
     
-    if (!gender || !age || !height || !currentWeight) {
+    if (!gender || !age || !height || !latestWeight) {
       toast({
         title: t.error,
-        description: t.fillAllFields,
+        description: t.fillAllFieldsAndWeight,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!activityLevel) {
+      toast({
+        title: t.error,
+        description: t.selectActivityLevel,
         variant: "destructive",
       });
       return;
@@ -59,21 +84,54 @@ export default function Profile() {
 
     const ageNum = parseInt(age);
     const heightNum = parseInt(height);
-    const weightNum = parseFloat(currentWeight);
+    const weightNum = latestWeight;
 
     let bmr: number;
     
+    // Mifflin-St Jeor Formula
     if (gender === "male") {
       bmr = 10 * weightNum + 6.25 * heightNum - 5 * ageNum + 5;
     } else {
       bmr = 10 * weightNum + 6.25 * heightNum - 5 * ageNum - 161;
     }
 
-    setFormData({ ...formData, bmr: Math.round(bmr).toString() });
+    // Activity multipliers
+    const activityMultipliers: { [key: string]: number } = {
+      sedentary: 1.2,      // Minimal or no exercise
+      light: 1.375,        // Light exercise 1-3 days/week
+      moderate: 1.55,      // Moderate exercise 3-5 days/week
+      active: 1.725,       // Heavy exercise 6-7 days/week
+    };
+
+    const tdee = bmr * activityMultipliers[activityLevel];
+    const deficitCalories = Math.round(tdee - 500); // 500 calorie deficit for weight loss
+    const maintenanceCalories = Math.round(tdee);
+    const surplusCalories = Math.round(tdee + 300); // 300 calorie surplus for weight gain
+
+    setFormData({ 
+      ...formData, 
+      bmr: Math.round(bmr).toString(),
+      tdee: Math.round(tdee).toString(),
+      deficitCalories: deficitCalories.toString(),
+      maintenanceCalories: maintenanceCalories.toString(),
+      surplusCalories: surplusCalories.toString(),
+    });
+    
     toast({
       title: t.bmrCalculated,
       description: `${t.bmrResult}: ${Math.round(bmr)} ${t.kcalPerDay}`,
     });
+  };
+
+  const getCurrentBMI = () => {
+    const latestWeight = getLatestWeight();
+    const heightNum = parseInt(formData.height);
+    
+    if (!latestWeight || !heightNum) return null;
+    
+    const heightInMeters = heightNum / 100;
+    const bmi = latestWeight / (heightInMeters * heightInMeters);
+    return bmi.toFixed(1);
   };
 
   const deleteProfile = () => {
@@ -86,6 +144,11 @@ export default function Profile() {
       targetWeight: "",
       medication: "",
       bmr: "",
+      activityLevel: "",
+      tdee: "",
+      deficitCalories: "",
+      maintenanceCalories: "",
+      surplusCalories: "",
       customFields: [] as Array<{ id: string; name: string; value: string; type: "text" | "number" | "date" }>,
     };
     setFormData(emptyProfile);
@@ -143,12 +206,20 @@ export default function Profile() {
     <div className="p-4 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">{t.profile}</h2>
-        {formData.bmr && (
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground">BMR</p>
-            <p className="text-lg font-semibold text-medical-primary">{formData.bmr} {t.kcal}</p>
-          </div>
-        )}
+        <div className="flex gap-4">
+          {getCurrentBMI() && (
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">BMI</p>
+              <p className="text-lg font-semibold text-medical-primary">{getCurrentBMI()}</p>
+            </div>
+          )}
+          {formData.bmr && (
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">BMR</p>
+              <p className="text-lg font-semibold text-medical-primary">{formData.bmr} {t.kcal}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
@@ -312,15 +383,100 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <Button onClick={calculateBMR} className="flex items-center gap-2">
-                  <Calculator className="w-4 h-4" />
-                  {t.calculateBMR}
-                </Button>
-                <Button onClick={handleSave} variant="outline">
-                  {t.save}
-                </Button>
+              <Button onClick={handleSave} variant="outline" className="w-full">
+                {t.save}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-medical-primary" />
+                {t.calorieCalculator}
+              </CardTitle>
+              <CardDescription>
+                {t.calorieCalculatorDesc}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                <p className="text-sm font-medium">{t.currentWeight}:</p>
+                <p className="text-2xl font-bold text-medical-primary">
+                  {getLatestWeight() ? `${getLatestWeight()} ${t.kg}` : t.noWeightData}
+                </p>
+                <p className="text-xs text-muted-foreground">{t.basedOnLatestRecord}</p>
               </div>
+
+              <div>
+                <Label>{t.activityLevel}</Label>
+                <Select value={formData.activityLevel} onValueChange={(value) => setFormData({ ...formData, activityLevel: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.selectActivityLevel} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sedentary">{t.sedentary}</SelectItem>
+                    <SelectItem value="light">{t.lightActivity}</SelectItem>
+                    <SelectItem value="moderate">{t.moderateActivity}</SelectItem>
+                    <SelectItem value="active">{t.activeActivity}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button onClick={calculateBMR} className="w-full flex items-center gap-2">
+                <Calculator className="w-4 h-4" />
+                {t.calculateBMR}
+              </Button>
+
+              {formData.bmr && formData.tdee && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div>
+                    <h4 className="font-medium mb-3">{t.calculationResults}</h4>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm text-muted-foreground">{t.basalMetabolicRate}</p>
+                        <p className="text-xl font-bold text-medical-primary">{formData.bmr} {t.kcalPerDay}</p>
+                      </div>
+                      
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <p className="text-sm text-muted-foreground">{t.totalDailyExpenditure}</p>
+                        <p className="text-xl font-bold text-medical-primary">{formData.tdee} {t.kcalPerDay}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <h4 className="font-medium mb-3">{t.calorieGoals}</h4>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">{t.weightLoss}</p>
+                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{formData.deficitCalories} {t.kcalPerDay}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{t.deficitDesc}</p>
+                      </div>
+
+                      <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">{t.weightMaintenance}</p>
+                          <p className="text-lg font-bold text-green-600 dark:text-green-400">{formData.maintenanceCalories} {t.kcalPerDay}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{t.maintenanceDesc}</p>
+                      </div>
+
+                      <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">{t.weightGain}</p>
+                          <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{formData.surplusCalories} {t.kcalPerDay}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{t.surplusDesc}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
