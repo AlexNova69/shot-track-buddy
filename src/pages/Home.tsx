@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Syringe, Weight, AlertTriangle, Target, TrendingUp } from "lucide-react";
+import { Syringe, Weight, AlertTriangle, Target, TrendingUp, Ruler } from "lucide-react";
 import { StatsBar } from "@/components/StatsBar";
 import { WidgetCard } from "@/components/WidgetCard";
 import { MiniChart } from "@/components/MiniChart";
@@ -11,6 +11,7 @@ import { InjectionDialog } from "@/components/dialogs/InjectionDialog";
 import { WeightDialog } from "@/components/dialogs/WeightDialog";
 import { SideEffectDialog } from "@/components/dialogs/SideEffectDialog";
 import { InjectionSiteDialog } from "@/components/dialogs/InjectionSiteDialog";
+import { MeasurementsDialog } from "@/components/dialogs/MeasurementsDialog";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translations } from "@/lib/translations";
 
@@ -23,6 +24,7 @@ export default function Home() {
   const [weightDialogOpen, setWeightDialogOpen] = useState(false);
   const [sideEffectDialogOpen, setSideEffectDialogOpen] = useState(false);
   const [injectionSiteDialogOpen, setInjectionSiteDialogOpen] = useState(false);
+  const [measurementsDialogOpen, setMeasurementsDialogOpen] = useState(false);
 
   const widgets = [
     {
@@ -65,6 +67,20 @@ export default function Home() {
         ))}
       </div>
 
+      {/* Measurements widget - full width below other widgets */}
+      <Card 
+        className="cursor-pointer transition-all hover:shadow-lg active:scale-95" 
+        onClick={() => setMeasurementsDialogOpen(true)}
+      >
+        <CardContent className="p-4 flex items-center gap-4">
+          <Ruler className="w-8 h-8 text-medical-info flex-shrink-0" />
+          <div className="flex-1">
+            <h3 className="font-semibold mb-1">{t.bodyMeasurements}</h3>
+            <p className="text-sm text-muted-foreground">{t.trackMeasurements}</p>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="space-y-4">
         <Card>
           <CardHeader className="pb-3">
@@ -88,6 +104,7 @@ export default function Home() {
       <WeightDialog open={weightDialogOpen} onOpenChange={setWeightDialogOpen} />
       <SideEffectDialog open={sideEffectDialogOpen} onOpenChange={setSideEffectDialogOpen} />
       <InjectionSiteDialog open={injectionSiteDialogOpen} onOpenChange={setInjectionSiteDialogOpen} />
+      <MeasurementsDialog open={measurementsDialogOpen} onOpenChange={setMeasurementsDialogOpen} />
     </div>
   );
 }
