@@ -39,7 +39,7 @@ export function useDataExport() {
         await Share.share({
           title: 'Export Data',
           text: 'Injection Tracker Data Export',
-          url: result.uri,
+          files: [result.uri],
           dialogTitle: 'Save your data',
         });
       } catch (error) {
@@ -112,7 +112,7 @@ export function useDataExport() {
         await Share.share({
           title: 'Export CSV',
           text: `${dataType} Data Export`,
-          url: result.uri,
+          files: [result.uri],
           dialogTitle: 'Save your CSV data',
         });
       } catch (error) {
