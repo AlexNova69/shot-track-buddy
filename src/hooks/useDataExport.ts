@@ -1,5 +1,6 @@
 import { useLocalStorage } from "./useLocalStorage";
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 
 export function useDataExport() {
@@ -7,6 +8,7 @@ export function useDataExport() {
   const [weights, setWeights] = useLocalStorage("weights", []);
   const [sideEffects, setSideEffects] = useLocalStorage("sideEffects", []);
   const [injectionSites, setInjectionSites] = useLocalStorage("injectionSites", []);
+  const [measurements, setMeasurements] = useLocalStorage("measurements", []);
   const [profile, setProfile] = useLocalStorage("profile", {});
 
   const exportToJSON = async () => {
@@ -16,6 +18,7 @@ export function useDataExport() {
       weights,
       sideEffects,
       injectionSites,
+      measurements,
       exportDate: new Date().toISOString(),
     };
 
@@ -24,14 +27,23 @@ export function useDataExport() {
 
     if (Capacitor.isNativePlatform()) {
       try {
-        await Filesystem.writeFile({
+        // Write file temporarily
+        const result = await Filesystem.writeFile({
           path: fileName,
           data: content,
-          directory: Directory.Documents,
+          directory: Directory.Cache,
           encoding: Encoding.UTF8,
         });
+
+        // Share the file using native share dialog
+        await Share.share({
+          title: 'Export Data',
+          text: 'Injection Tracker Data Export',
+          url: result.uri,
+          dialogTitle: 'Save your data',
+        });
       } catch (error) {
-        console.error('Error writing file:', error);
+        console.error('Error exporting file:', error);
         throw error;
       }
     } else {
@@ -88,14 +100,23 @@ export function useDataExport() {
 
     if (Capacitor.isNativePlatform()) {
       try {
-        await Filesystem.writeFile({
+        // Write file temporarily
+        const result = await Filesystem.writeFile({
           path: fileName,
           data: csvContent,
-          directory: Directory.Documents,
+          directory: Directory.Cache,
           encoding: Encoding.UTF8,
         });
+
+        // Share the file using native share dialog
+        await Share.share({
+          title: 'Export CSV',
+          text: `${dataType} Data Export`,
+          url: result.uri,
+          dialogTitle: 'Save your CSV data',
+        });
       } catch (error) {
-        console.error('Error writing CSV file:', error);
+        console.error('Error exporting CSV file:', error);
         throw error;
       }
     } else {
@@ -135,6 +156,9 @@ export function useDataExport() {
           }
           if (data.injectionSites && Array.isArray(data.injectionSites)) {
             setInjectionSites(data.injectionSites);
+          }
+          if (data.measurements && Array.isArray(data.measurements)) {
+            setMeasurements(data.measurements);
           }
           if (data.profile && typeof data.profile === 'object') {
             setProfile(data.profile);
