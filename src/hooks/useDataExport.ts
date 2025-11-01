@@ -47,15 +47,34 @@ export function useDataExport() {
         throw error;
       }
     } else {
-      const blob = new Blob([content], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Web/WebView: try Web Share API with files first, then fallback to download
+      try {
+        const blob = new Blob([content], { type: "application/json" });
+        const file = new File([blob], fileName, { type: "application/json" });
+        const navAny = navigator as any;
+        if (typeof navigator !== "undefined" && "share" in navigator) {
+          if (!navAny.canShare || navAny.canShare({ files: [file] })) {
+            await navAny.share({
+              title: 'Export Data',
+              text: 'Injection Tracker Data Export',
+              files: [file],
+            });
+            return;
+          }
+        }
+        // Fallback: programmatic download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Web export failed:', err);
+        throw err;
+      }
     }
   };
 
@@ -120,15 +139,34 @@ export function useDataExport() {
         throw error;
       }
     } else {
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Web/WebView: try Web Share API with files first, then fallback to download
+      try {
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const file = new File([blob], fileName, { type: "text/csv;charset=utf-8;" });
+        const navAny = navigator as any;
+        if (typeof navigator !== "undefined" && "share" in navigator) {
+          if (!navAny.canShare || navAny.canShare({ files: [file] })) {
+            await navAny.share({
+              title: 'Export CSV',
+              text: `${dataType} Data Export`,
+              files: [file],
+            });
+            return;
+          }
+        }
+        // Fallback: programmatic download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Web CSV export failed:', err);
+        throw err;
+      }
     }
   };
 
