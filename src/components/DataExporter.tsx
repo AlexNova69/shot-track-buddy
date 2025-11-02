@@ -7,11 +7,12 @@ import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translations } from "@/lib/translations";
 import { useRef } from "react";
+import { Share } from "lucide-react";
 
 export function DataExporter() {
   const { language } = useLanguage();
   const t = translations[language];
-  const { exportToJSON, exportToCSV, importFromJSON } = useDataExport();
+  const { exportToJSON, exportToCSV, importFromJSON, shareJSON } = useDataExport();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportJSON = async () => {
@@ -48,6 +49,22 @@ export function DataExporter() {
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleShareJSON = async () => {
+    try {
+      await shareJSON();
+      toast({
+        title: "Данные переданы",
+        description: "Файл передан через системное окно «Поделиться»",
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка передачи",
+        description: error instanceof Error ? error.message : "Не удалось поделиться данными",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,6 +105,10 @@ export function DataExporter() {
             <Button onClick={handleExportJSON} className="w-full flex items-center gap-2">
               <Download className="w-4 h-4" />
               {t.exportAll}
+            </Button>
+            <Button onClick={handleShareJSON} variant="secondary" className="w-full flex items-center gap-2">
+              <Share className="w-4 h-4" />
+              Поделиться файлом
             </Button>
             <Button onClick={handleImportClick} variant="outline" className="w-full flex items-center gap-2">
               <Upload className="w-4 h-4" />

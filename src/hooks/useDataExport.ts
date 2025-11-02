@@ -267,9 +267,44 @@ export function useDataExport() {
     });
   };
 
+  const shareJSON = async () => {
+    const data = {
+      profile,
+      injections,
+      weights,
+      sideEffects,
+      injectionSites,
+      measurements,
+      exportDate: new Date().toISOString(),
+    };
+
+    const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
+    const content = JSON.stringify(data, null, 2);
+
+    // Принудительное использование Share API без fallback
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      const navAny = navigator as any;
+      
+      try {
+        // Попытка поделиться как текст
+        await navAny.share({
+          title: 'Экспорт данных Injection Tracker',
+          text: `${fileName}\n\n${content}`,
+        });
+        return;
+      } catch (error) {
+        console.error('Share failed:', error);
+        throw new Error('Поделиться не удалось');
+      }
+    } else {
+      throw new Error('Функция "Поделиться" недоступна');
+    }
+  };
+
   return {
     exportToJSON,
     exportToCSV,
     importFromJSON,
+    shareJSON,
   };
 }
