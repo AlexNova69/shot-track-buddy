@@ -2,9 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart } from "recharts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { TrendingDown, Syringe, Activity, Target, MapPin, Calendar } from "lucide-react";
+import { TrendingDown, Syringe, Activity, Target, MapPin, Calendar, Ruler } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translations } from "@/lib/translations";
+import { MeasurementsProgress } from "@/components/MeasurementsProgress";
 
 export default function Charts() {
   const { language } = useLanguage();
@@ -145,7 +146,7 @@ export default function Charts() {
       )}
 
       <Tabs defaultValue="weight" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="weight" className="flex items-center gap-1">
             <TrendingDown className="w-4 h-4" />
             <span className="hidden sm:inline">{language === "ru" ? "Вес" : "Weight"}</span>
@@ -161,6 +162,10 @@ export default function Charts() {
           <TabsTrigger value="sites" className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
             <span className="hidden sm:inline">{language === "ru" ? "Места" : "Sites"}</span>
+          </TabsTrigger>
+          <TabsTrigger value="measurements" className="flex items-center gap-1">
+            <Ruler className="w-4 h-4" />
+            <span className="hidden sm:inline">{language === "ru" ? "Замеры" : "Measurements"}</span>
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-1">
             <Target className="w-4 h-4" />
@@ -376,6 +381,10 @@ export default function Charts() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="measurements" className="space-y-4">
+          <MeasurementsProgress />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">

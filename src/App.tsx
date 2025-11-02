@@ -11,11 +11,13 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { MobileLayout } from "@/components/MobileLayout";
 import { useTheme } from "@/hooks/useTheme";
+import { useDataMigration } from "@/hooks/useDataMigration";
 
 const queryClient = new QueryClient();
 
 function AppContent() {
   const { theme } = useTheme();
+  useDataMigration();
   
   useEffect(() => {
     // Apply theme class to document
