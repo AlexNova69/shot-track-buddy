@@ -53,11 +53,18 @@ export function DataExporter() {
 
   const handleShareJSON = async () => {
     try {
-      await shareJSON();
-      toast({
-        title: "Данные переданы",
-        description: "Файл передан через системное окно «Поделиться»",
-      });
+      const res = await shareJSON();
+      const map = {
+        'native-share': { title: 'Данные переданы', desc: 'Файл передан через системное окно «Поделиться»' },
+        'share-files': { title: 'Данные переданы', desc: 'Файл передан через системное окно «Поделиться»' },
+        'share-url': { title: 'Ссылка передана', desc: 'Данные отправлены как ссылка data:URL' },
+        'share-text': { title: 'Текст передан', desc: 'Данные отправлены как текст' },
+        'download': { title: 'Файл сохранён', desc: 'JSON скачан в загрузки' },
+        'open': { title: 'Открыл файл', desc: 'Мы открыли JSON в новой вкладке — используйте меню для сохранения/отправки' },
+        'clipboard': { title: 'Данные скопированы', desc: 'JSON скопирован в буфер — вставьте в заметки/чат' },
+      } as const;
+      const msg = map[res?.method as keyof typeof map] ?? { title: 'Готово', desc: 'Данные подготовлены' };
+      toast({ title: msg.title, description: msg.desc });
     } catch (error) {
       toast({
         title: "Ошибка передачи",

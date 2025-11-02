@@ -281,23 +281,103 @@ export function useDataExport() {
     const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
     const content = JSON.stringify(data, null, 2);
 
-    // Принудительное использование Share API без fallback
-    if (typeof navigator !== "undefined" && "share" in navigator) {
-      const navAny = navigator as any;
-      
+    // 1) Native: использовать Capacitor Share + Filesystem если доступно
+    if (Capacitor.isNativePlatform()) {
       try {
-        // Попытка поделиться как текст
-        await navAny.share({
-          title: 'Экспорт данных Injection Tracker',
-          text: `${fileName}\n\n${content}`,
+        const result = await Filesystem.writeFile({
+          path: fileName,
+          data: content,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
         });
-        return;
+        await Share.share({
+          title: 'Экспорт данных Injection Tracker',
+          text: 'Экспорт JSON',
+          files: [result.uri],
+        });
+        return { method: 'native-share' } as const;
       } catch (error) {
-        console.error('Share failed:', error);
-        throw new Error('Поделиться не удалось');
+        console.error('Native share failed:', error);
+        // Падать не будем — продолжим веб-фолбэками
       }
-    } else {
-      throw new Error('Функция "Поделиться" недоступна');
+    }
+
+    // 2) Web/WebView
+    try {
+      const blob = new Blob([content], { type: 'application/json' });
+      const file = new File([blob], fileName, { type: 'application/json' });
+      const navAny = navigator as any;
+
+      // 2a) Пытаемся share с файлами
+      if (typeof navigator !== 'undefined' && 'share' in navigator) {
+        if (!navAny?.canShare || navAny.canShare({ files: [file] })) {
+          try {
+            await navAny.share({
+              title: 'Экспорт данных Injection Tracker',
+              text: 'Экспорт JSON',
+              files: [file],
+            });
+            return { method: 'share-files' } as const;
+          } catch (e) {
+            // Продолжаем к следующим вариантам
+          }
+        }
+
+        // 2b) Share с data:URL
+        const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
+        try {
+          await navAny.share({
+            title: 'Экспорт данных Injection Tracker',
+            text: fileName,
+            url: dataUrl,
+          });
+          return { method: 'share-url' } as const;
+        } catch (e) {
+          // Продолжаем к тексту
+        }
+
+        // 2c) Share как текст
+        try {
+          await navAny.share({
+            title: 'Экспорт данных Injection Tracker',
+            text: `${fileName}\n\n${content}`,
+          });
+          return { method: 'share-text' } as const;
+        } catch (e) {
+          // Продолжаем к локальным фолбэкам без ошибок пользователю
+        }
+      }
+
+      // 3) Фолбэк: программная загрузка файла
+      try {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return { method: 'download' } as const;
+      } catch (e) {
+        // 4) Фолбэк: открыть в новой вкладке (чтобы сохранить/шарить из меню)
+        try {
+          const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
+          window.open(dataUrl, '_blank');
+          return { method: 'open' } as const;
+        } catch (e2) {
+          // 5) Фолбэк: буфер обмена
+          try {
+            await navigator.clipboard.writeText(content);
+            return { method: 'clipboard' } as const;
+          } catch (e3) {
+            throw new Error('Не удалось поделиться или сохранить файл');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Web share/download failed:', error);
+      throw error;
     }
   };
 
