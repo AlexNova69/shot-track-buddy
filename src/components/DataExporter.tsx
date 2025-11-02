@@ -12,7 +12,7 @@ import { Share } from "lucide-react";
 export function DataExporter() {
   const { language } = useLanguage();
   const t = translations[language];
-  const { exportToJSON, exportToCSV, importFromJSON, shareJSON } = useDataExport();
+  const { exportToJSON, exportToCSV, importFromJSON, shareJSON, copyJSONToClipboard } = useDataExport();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportJSON = async () => {
@@ -62,6 +62,7 @@ export function DataExporter() {
         'download': { title: 'Файл сохранён', desc: 'JSON скачан в загрузки' },
         'open': { title: 'Открыл файл', desc: 'Мы открыли JSON в новой вкладке — используйте меню для сохранения/отправки' },
         'clipboard': { title: 'Данные скопированы', desc: 'JSON скопирован в буфер — вставьте в заметки/чат' },
+        'copy-textarea': { title: 'Данные скопированы', desc: 'JSON скопирован — вставьте в заметки/чат' },
       } as const;
       const msg = map[res?.method as keyof typeof map] ?? { title: 'Готово', desc: 'Данные подготовлены' };
       toast({ title: msg.title, description: msg.desc });
@@ -69,6 +70,24 @@ export function DataExporter() {
       toast({
         title: "Ошибка передачи",
         description: error instanceof Error ? error.message : "Не удалось поделиться данными",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCopyJSON = async () => {
+    try {
+      const res = await copyJSONToClipboard();
+      const map = {
+        'clipboard': { title: 'Данные скопированы', desc: 'JSON в буфере — вставьте в заметки/чат' },
+        'copy-textarea': { title: 'Данные скопированы', desc: 'JSON скопирован — вставьте в заметки/чат' },
+      } as const;
+      const msg = map[res?.method as keyof typeof map] ?? { title: 'Готово', desc: 'Данные скопированы' };
+      toast({ title: msg.title, description: msg.desc });
+    } catch (error) {
+      toast({
+        title: "Ошибка копирования",
+        description: error instanceof Error ? error.message : "Не удалось скопировать данные",
         variant: "destructive",
       });
     }
@@ -115,7 +134,11 @@ export function DataExporter() {
             </Button>
             <Button onClick={handleShareJSON} variant="secondary" className="w-full flex items-center gap-2">
               <Share className="w-4 h-4" />
-              Поделиться файлом
+              Поделиться (системное меню)
+            </Button>
+            <Button onClick={handleCopyJSON} variant="outline" className="w-full flex items-center gap-2">
+              <FileJson className="w-4 h-4" />
+              Копировать JSON
             </Button>
             <Button onClick={handleImportClick} variant="outline" className="w-full flex items-center gap-2">
               <Upload className="w-4 h-4" />

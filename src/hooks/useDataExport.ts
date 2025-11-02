@@ -381,10 +381,49 @@ export function useDataExport() {
     }
   };
 
+  // Simple clipboard export that avoids file system/share permissions
+  const copyJSONToClipboard = async () => {
+    const data = {
+      profile,
+      injections,
+      weights,
+      sideEffects,
+      injectionSites,
+      measurements,
+      exportDate: new Date().toISOString(),
+    };
+    const content = JSON.stringify(data, null, 2);
+
+    // Try modern clipboard API first
+    try {
+      await navigator.clipboard.writeText(content);
+      return { method: 'clipboard' } as const;
+    } catch {
+      // Fallback: hidden textarea selection
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = content;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (!ok) throw new Error('execCommand copy failed');
+        return { method: 'copy-textarea' } as const;
+      } catch (e) {
+        throw new Error('Не удалось скопировать данные.');
+      }
+    }
+  };
+
   return {
     exportToJSON,
     exportToCSV,
     importFromJSON,
     shareJSON,
+    copyJSONToClipboard,
   };
 }
