@@ -47,58 +47,43 @@ export function useDataExport() {
         throw error;
       }
     } else {
-      // Web/WebView: prefer Share API; fallback to download
+      // Web/WebView: download-first strategy with resilient fallbacks (AppsGeyser safe)
       try {
-        const blob = new Blob([content], { type: "application/json" });
-        const file = new File([blob], fileName, { type: "application/json" });
-        const navAny = navigator as any;
-        const ua = (typeof navigator !== "undefined" && navigator.userAgent) ? navigator.userAgent : "";
+        const blob = new Blob([content], { type: 'application/json' });
+        const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
         const isAndroidWebView = /Android/i.test(ua) && /wv/i.test(ua);
 
-        // 1) Share with files (if supported)
-        if (typeof navigator !== "undefined" && "share" in navigator) {
-          if (!navAny.canShare || navAny.canShare({ files: [file] })) {
-            try {
-              await navAny.share({
-                title: 'Export Data',
-                text: 'Injection Tracker Data Export',
-                files: [file],
-              });
-              return;
-            } catch {}
-          }
-        }
+        // a) Direct download (skip Web Share to avoid "data transfer" errors in Android WebView)
+        try {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          return;
+        } catch {}
 
-        // 2) Share as URL/text (works better on some WebViews like AppsGeyser)
-        if (typeof navigator !== "undefined" && "share" in navigator) {
-          const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
-          try {
-            await navAny.share({
-              title: 'Export Data',
-              text: 'Injection Tracker Data Export',
-              url: dataUrl,
-            });
-            return;
-          } catch {}
-          // As a last share attempt, send plain text
-          try {
-            await navAny.share({
-              title: 'Export Data',
-              text: `${fileName}\n\n${content}`,
-            });
-            return;
-          } catch {}
-        }
+        // b) Open data URL (lets user save/share from menu)
+        const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
+        try {
+          const win = window.open(dataUrl, '_blank');
+          if (win) return;
+        } catch {}
+        try {
+          window.location.href = dataUrl;
+          return;
+        } catch {}
 
-        // 3) Fallback: programmatic download
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // c) Clipboard fallback
+        try {
+          await navigator.clipboard.writeText(content);
+          return;
+        } catch {}
+
+        throw new Error('Web export failed');
       } catch (err) {
         console.error('Web export failed:', err);
         throw err;
@@ -167,58 +152,43 @@ export function useDataExport() {
         throw error;
       }
     } else {
-      // Web/WebView: prefer Share API; fallback to download
+      // Web/WebView: download-first strategy with resilient fallbacks (AppsGeyser safe)
       try {
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const file = new File([blob], fileName, { type: "text/csv;charset=utf-8;" });
-        const navAny = navigator as any;
-        const ua = (typeof navigator !== "undefined" && navigator.userAgent) ? navigator.userAgent : "";
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
         const isAndroidWebView = /Android/i.test(ua) && /wv/i.test(ua);
 
-        // 1) Share with files (if supported)
-        if (typeof navigator !== "undefined" && "share" in navigator) {
-          if (!navAny.canShare || navAny.canShare({ files: [file] })) {
-            try {
-              await navAny.share({
-                title: 'Export CSV',
-                text: `${dataType} Data Export`,
-                files: [file],
-              });
-              return;
-            } catch {}
-          }
-        }
+        // a) Direct download (skip Web Share in Android WebView)
+        try {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          return;
+        } catch {}
 
-        // 2) Share as URL/text (works better on some WebViews like AppsGeyser)
-        if (typeof navigator !== "undefined" && "share" in navigator) {
-          const dataUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
-          try {
-            await navAny.share({
-              title: 'Export CSV',
-              text: `${dataType} Data Export`,
-              url: dataUrl,
-            });
-            return;
-          } catch {}
-          // As a last share attempt, send plain text
-          try {
-            await navAny.share({
-              title: 'Export CSV',
-              text: `${fileName}\n\n${csvContent}`,
-            });
-            return;
-          } catch {}
-        }
+        // b) Open data URL
+        const dataUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
+        try {
+          const win = window.open(dataUrl, '_blank');
+          if (win) return;
+        } catch {}
+        try {
+          window.location.href = dataUrl;
+          return;
+        } catch {}
 
-        // 3) Fallback: programmatic download
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // c) Clipboard fallback
+        try {
+          await navigator.clipboard.writeText(csvContent);
+          return;
+        } catch {}
+
+        throw new Error('Web CSV export failed');
       } catch (err) {
         console.error('Web CSV export failed:', err);
         throw err;
