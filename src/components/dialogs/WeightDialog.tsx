@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +17,9 @@ import { translations } from "@/lib/translations";
 interface WeightDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editRecord?: any;
 }
 
-export function WeightDialog({ open, onOpenChange, editRecord }: WeightDialogProps) {
+export function WeightDialog({ open, onOpenChange }: WeightDialogProps) {
   const { language } = useLanguage();
   const t = translations[language];
   const locale = language === "ru" ? ru : enUS;
@@ -28,17 +27,6 @@ export function WeightDialog({ open, onOpenChange, editRecord }: WeightDialogPro
   const [weights, setWeights] = useLocalStorage("weights", []);
   const [date, setDate] = useState<Date>(new Date());
   const [weight, setWeight] = useState("");
-
-  // Заполняем форму при редактировании
-  useEffect(() => {
-    if (open && editRecord) {
-      setDate(new Date(editRecord.date));
-      setWeight(editRecord.weight);
-    } else if (open && !editRecord) {
-      setDate(new Date());
-      setWeight("");
-    }
-  }, [open, editRecord]);
 
   const handleSave = () => {
     if (!weight) {
@@ -60,38 +48,22 @@ export function WeightDialog({ open, onOpenChange, editRecord }: WeightDialogPro
       return;
     }
 
-    if (editRecord) {
-      // Редактирование существующей записи
-      const updatedWeights = weights.map((w: any) =>
-        w.id === editRecord.id
-          ? {
-              ...w,
-              date: date.toISOString(),
-              weight: weightNum.toString(),
-            }
-          : w
-      );
-      setWeights(updatedWeights);
+    const newWeight = {
+      id: Date.now(),
+      date: date.toISOString(),
+      weight: weightNum.toString(),
+    };
 
-      toast({
-        title: t.recordUpdated || "Запись обновлена",
-        description: `${weightNum}${language === "ru" ? "кг" : "kg"} ${language === "ru" ? "на" : "on"} ${format(date, "dd.MM.yyyy")}`,
-      });
-    } else {
-      // Создание новой записи
-      const newWeight = {
-        id: Date.now(),
-        date: date.toISOString(),
-        weight: weightNum.toString(),
-      };
-
-      setWeights([...weights, newWeight]);
-
-      toast({
-        title: t.weightLogged,
-        description: `${weightNum}${language === "ru" ? "кг" : "kg"} ${language === "ru" ? "на" : "on"} ${format(date, "dd.MM.yyyy")}`,
-      });
-    }
+    setWeights([...weights, newWeight]);
+    
+    // Reset form
+    setDate(new Date());
+    setWeight("");
+    
+    toast({
+      title: t.weightLogged,
+      description: `${weightNum}${language === "ru" ? "кг" : "kg"} ${language === "ru" ? "на" : "on"} ${format(date, "dd.MM.yyyy")}`,
+    });
     
     onOpenChange(false);
   };
@@ -100,7 +72,7 @@ export function WeightDialog({ open, onOpenChange, editRecord }: WeightDialogPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{editRecord ? (t.editWeight || "Редактировать вес") : t.addWeightTitle}</DialogTitle>
+          <DialogTitle>{t.addWeightTitle}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">

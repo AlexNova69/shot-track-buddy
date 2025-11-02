@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -17,10 +17,9 @@ import { translations } from "@/lib/translations";
 interface SideEffectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editRecord?: any;
 }
 
-export function SideEffectDialog({ open, onOpenChange, editRecord }: SideEffectDialogProps) {
+export function SideEffectDialog({ open, onOpenChange }: SideEffectDialogProps) {
   const { language } = useLanguage();
   const t = translations[language];
   const locale = language === "ru" ? ru : enUS;
@@ -28,17 +27,6 @@ export function SideEffectDialog({ open, onOpenChange, editRecord }: SideEffectD
   const [sideEffects, setSideEffects] = useLocalStorage("sideEffects", []);
   const [date, setDate] = useState<Date>(new Date());
   const [description, setDescription] = useState("");
-
-  // Заполняем форму при редактировании
-  useEffect(() => {
-    if (open && editRecord) {
-      setDate(new Date(editRecord.date));
-      setDescription(editRecord.description || "");
-    } else if (open && !editRecord) {
-      setDate(new Date());
-      setDescription("");
-    }
-  }, [open, editRecord]);
 
   const handleSave = () => {
     if (!description.trim()) {
@@ -50,38 +38,22 @@ export function SideEffectDialog({ open, onOpenChange, editRecord }: SideEffectD
       return;
     }
 
-    if (editRecord) {
-      // Редактирование существующей записи
-      const updatedSideEffects = sideEffects.map((se: any) =>
-        se.id === editRecord.id
-          ? {
-              ...se,
-              date: date.toISOString(),
-              description: description.trim(),
-            }
-          : se
-      );
-      setSideEffects(updatedSideEffects);
+    const newSideEffect = {
+      id: Date.now(),
+      date: date.toISOString(),
+      description: description.trim(),
+    };
 
-      toast({
-        title: t.recordUpdated || "Запись обновлена",
-        description: t.recordSaved,
-      });
-    } else {
-      // Создание новой записи
-      const newSideEffect = {
-        id: Date.now(),
-        date: date.toISOString(),
-        description: description.trim(),
-      };
-
-      setSideEffects([...sideEffects, newSideEffect]);
-
-      toast({
-        title: t.sideEffectLogged,
-        description: t.recordSaved,
-      });
-    }
+    setSideEffects([...sideEffects, newSideEffect]);
+    
+    // Reset form
+    setDate(new Date());
+    setDescription("");
+    
+    toast({
+      title: t.sideEffectLogged,
+      description: t.recordSaved,
+    });
     
     onOpenChange(false);
   };
@@ -90,7 +62,7 @@ export function SideEffectDialog({ open, onOpenChange, editRecord }: SideEffectD
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{editRecord ? (t.editSideEffect || "Редактировать побочный эффект") : t.logSideEffectTitle}</DialogTitle>
+          <DialogTitle>{t.logSideEffectTitle}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
