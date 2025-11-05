@@ -131,6 +131,9 @@ export const translations = {
     bodyDiagram: "Схема тела",
     weightDynamics: "Динамика веса",
     viewAll: "Посмотреть всё",
+    daysSinceStart: "Дней прошло",
+    totalWeightLost: "Всего потеряно",
+    nextInjection: "Следующий укол",
     
     // Recent records
     recentEffects: "Последние записи",
@@ -488,6 +491,9 @@ export const translations = {
     bodyDiagram: "Body diagram",
     weightDynamics: "Weight Dynamics",
     viewAll: "View All",
+    daysSinceStart: "Days elapsed",
+    totalWeightLost: "Total lost",
+    nextInjection: "Next injection",
     
     // Recent records
     recentEffects: "Recent Records",

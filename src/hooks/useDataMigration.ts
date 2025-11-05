@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const CURRENT_VERSION = "1.1.0";
+const CURRENT_VERSION = "1.1.1";
 const VERSION_KEY = "app_data_version";
 
 export function useDataMigration() {
