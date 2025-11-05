@@ -16,9 +16,10 @@ import { toast } from "sonner";
 interface MeasurementsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editRecord?: any;
 }
 
-export function MeasurementsDialog({ open, onOpenChange }: MeasurementsDialogProps) {
+export function MeasurementsDialog({ open, onOpenChange, editRecord }: MeasurementsDialogProps) {
   const { language } = useLanguage();
   const t = translations[language];
   const [measurements, setMeasurements] = useLocalStorage("measurements", []);
@@ -42,8 +43,17 @@ export function MeasurementsDialog({ open, onOpenChange }: MeasurementsDialogPro
       setFrontPhoto("");
       setSidePhoto("");
       setBackPhoto("");
+    } else if (editRecord) {
+      setDate(new Date(editRecord.date));
+      setNeck(editRecord.neck?.toString() || "");
+      setShoulders(editRecord.shoulders?.toString() || "");
+      setWaist(editRecord.waist?.toString() || "");
+      setHips(editRecord.hips?.toString() || "");
+      setFrontPhoto(editRecord.frontPhoto || "");
+      setSidePhoto(editRecord.sidePhoto || "");
+      setBackPhoto(editRecord.backPhoto || "");
     }
-  }, [open]);
+  }, [open, editRecord]);
 
   const canAddMeasurement = () => {
     if (measurements.length === 0) return true;
@@ -77,7 +87,7 @@ export function MeasurementsDialog({ open, onOpenChange }: MeasurementsDialogPro
   };
 
   const handleSubmit = () => {
-    if (!canAddMeasurement()) {
+    if (!editRecord && !canAddMeasurement()) {
       toast.error(t.measurementWeeklyLimit);
       return;
     }
@@ -87,7 +97,7 @@ export function MeasurementsDialog({ open, onOpenChange }: MeasurementsDialogPro
       return;
     }
 
-    const newMeasurement = {
+    const measurementData = {
       date: date.toISOString(),
       neck: parseFloat(neck),
       shoulders: parseFloat(shoulders),
@@ -98,8 +108,17 @@ export function MeasurementsDialog({ open, onOpenChange }: MeasurementsDialogPro
       backPhoto,
     };
 
-    setMeasurements([...measurements, newMeasurement]);
-    toast.success(t.measurementAdded);
+    if (editRecord) {
+      const updatedMeasurements = measurements.map((m: any) =>
+        m.date === editRecord.date ? measurementData : m
+      );
+      setMeasurements(updatedMeasurements);
+      toast.success(t.measurementUpdated || "Измерение обновлено");
+    } else {
+      setMeasurements([...measurements, measurementData]);
+      toast.success(t.measurementAdded);
+    }
+    
     onOpenChange(false);
   };
 
@@ -107,7 +126,7 @@ export function MeasurementsDialog({ open, onOpenChange }: MeasurementsDialogPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t.bodyMeasurements}</DialogTitle>
+          <DialogTitle>{editRecord ? (t.editMeasurement || "Редактировать измерение") : t.bodyMeasurements}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -310,7 +329,7 @@ export function MeasurementsDialog({ open, onOpenChange }: MeasurementsDialogPro
           </div>
 
           {/* Info message */}
-          {!canAddMeasurement() && (
+          {!editRecord && !canAddMeasurement() && (
             <div className="p-3 bg-medical-warning/10 border border-medical-warning/20 rounded-md">
               <p className="text-sm text-medical-warning">{t.measurementWeeklyLimit}</p>
             </div>
@@ -324,9 +343,9 @@ export function MeasurementsDialog({ open, onOpenChange }: MeasurementsDialogPro
             <Button 
               className="flex-1" 
               onClick={handleSubmit}
-              disabled={!canAddMeasurement()}
+              disabled={!editRecord && !canAddMeasurement()}
             >
-              {t.submit}
+              {editRecord ? (t.update || "Обновить") : t.submit}
             </Button>
           </div>
         </div>

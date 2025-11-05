@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Syringe, Weight, AlertTriangle, Target } from "lucide-react";
+import { Edit, Trash2, Syringe, Weight, AlertTriangle, Target, Ruler } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translations } from "@/lib/translations";
 import { InjectionDialog } from "@/components/dialogs/InjectionDialog";
 import { WeightDialog } from "@/components/dialogs/WeightDialog";
 import { SideEffectDialog } from "@/components/dialogs/SideEffectDialog";
+import { MeasurementsDialog } from "@/components/dialogs/MeasurementsDialog";
 import { toast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -30,6 +31,7 @@ export default function History() {
   const [weights, setWeights] = useLocalStorage("weights", []);
   const [sideEffects, setSideEffects] = useLocalStorage("sideEffects", []);
   const [injectionSites, setInjectionSites] = useLocalStorage("injectionSites", []);
+  const [measurements, setMeasurements] = useLocalStorage("measurements", []);
 
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [dialogType, setDialogType] = useState<string>("");
@@ -40,6 +42,7 @@ export default function History() {
     ...weights.map((item: any) => ({ ...item, type: "weight", icon: Weight })),
     ...sideEffects.map((item: any) => ({ ...item, type: "sideEffect", icon: AlertTriangle })),
     ...injectionSites.map((item: any) => ({ ...item, type: "site", icon: Target })),
+    ...measurements.map((item: any) => ({ ...item, type: "measurement", icon: Ruler })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getRecordContent = (record: any) => {
@@ -52,6 +55,8 @@ export default function History() {
         return record.description;
       case "site":
         return `${t.siteField}: ${record.site}`;
+      case "measurement":
+        return `${t.neck}: ${record.neck}, ${t.shoulders}: ${record.shoulders}, ${t.waist}: ${record.waist}, ${t.hips}: ${record.hips}`;
       default:
         return "";
     }
@@ -67,6 +72,8 @@ export default function History() {
         return "bg-medical-warning";
       case "site":
         return "bg-medical-info";
+      case "measurement":
+        return "bg-purple-500";
       default:
         return "bg-muted";
     }
@@ -82,6 +89,8 @@ export default function History() {
         return t.sideEffectRecord;
       case "site":
         return t.injectionSiteRecord;
+      case "measurement":
+        return t.bodyMeasurements || "Измерения тела";
       default:
         return "";
     }
@@ -118,6 +127,9 @@ export default function History() {
         break;
       case "site":
         setInjectionSites(injectionSites.filter((item: any) => item.id !== deleteRecord.id));
+        break;
+      case "measurement":
+        setMeasurements(measurements.filter((item: any) => item.date !== deleteRecord.date));
         break;
     }
 
@@ -218,6 +230,17 @@ export default function History() {
 
       <SideEffectDialog
         open={dialogType === "sideEffect"}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDialogType("");
+            setEditingRecord(null);
+          }
+        }}
+        editRecord={editingRecord}
+      />
+
+      <MeasurementsDialog
+        open={dialogType === "measurement"}
         onOpenChange={(open) => {
           if (!open) {
             setDialogType("");
