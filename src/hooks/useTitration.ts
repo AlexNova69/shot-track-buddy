@@ -37,6 +37,21 @@ export interface SyringeUsageSchedule {
   needNewSyringe: boolean;
 }
 
+export interface CurrentSyringeInfo {
+  remainingVolume: number;
+  dateToReplaceBy: Date | null;
+  injectionsRemaining: number;
+  syringeNumber: number;
+}
+
+export interface DoseBreakdown {
+  dose: number;
+  shots025: number; // количество уколов по 0.25
+  shots05: number;  // количество уколов по 0.5
+  totalShots: number;
+  remainingInjectionsForThisDose: number; // сколько раз можно сделать эту дозу из оставшегося объема
+}
+
 export function useTitration() {
   const [injections] = useLocalStorage("injections", []);
 
@@ -175,6 +190,116 @@ export function useTitration() {
       return schedule;
     };
 
+    // Calculate how many shots of 0.25 and 0.5 are needed for each dose
+    const calculateDoseBreakdown = (dose: number, remainingVolume: number): DoseBreakdown => {
+      let shots025 = 0;
+      let shots05 = 0;
+
+      // Используем жадный алгоритм: сначала максимум 0.5, потом 0.25
+      let remaining = dose;
+      shots05 = Math.floor(remaining / 0.5);
+      remaining = Math.round((remaining - shots05 * 0.5) * 100) / 100; // избегаем ошибок округления
+      
+      if (remaining > 0) {
+        shots025 = Math.round(remaining / 0.25);
+      }
+
+      const totalShots = shots025 + shots05;
+      const volumePerDose = dose; // каждая доза требует определенный объем
+      const remainingInjectionsForThisDose = Math.floor(remainingVolume / volumePerDose);
+
+      return {
+        dose,
+        shots025,
+        shots05,
+        totalShots,
+        remainingInjectionsForThisDose,
+      };
+    };
+
+    // Calculate current syringe status
+    const calculateCurrentSyringeStatus = (): CurrentSyringeInfo | null => {
+      if (totalInjections === 0) return null;
+
+      let usedVolume = 0;
+      let syringeNumber = 1;
+
+      // Calculate which syringe we're on and how much volume has been used
+      for (let i = 1; i <= totalInjections; i++) {
+        let dose = MAINTENANCE_DOSE;
+        let accumulatedInjections = 0;
+        for (const scheme of TITRATION_SCHEME) {
+          if (i <= accumulatedInjections + scheme.injections) {
+            dose = scheme.dose;
+            break;
+          }
+          accumulatedInjections += scheme.injections;
+        }
+
+        if (usedVolume + dose > SYRINGE_CAPACITY) {
+          // Start new syringe
+          syringeNumber++;
+          usedVolume = dose;
+        } else {
+          usedVolume += dose;
+        }
+      }
+
+      const remainingVolume = SYRINGE_CAPACITY - usedVolume;
+
+      // Calculate how many more injections can be done with remaining volume
+      let injectionsRemaining = 0;
+      let tempVolume = remainingVolume;
+      let tempInjectionCount = totalInjections;
+
+      while (tempVolume > 0) {
+        tempInjectionCount++;
+        let dose = MAINTENANCE_DOSE;
+        let accumulatedInjections = 0;
+        for (const scheme of TITRATION_SCHEME) {
+          if (tempInjectionCount <= accumulatedInjections + scheme.injections) {
+            dose = scheme.dose;
+            break;
+          }
+          accumulatedInjections += scheme.injections;
+        }
+
+        if (tempVolume >= dose) {
+          tempVolume -= dose;
+          injectionsRemaining++;
+        } else {
+          break;
+        }
+
+        // Prevent infinite loop
+        if (tempInjectionCount > 100) break;
+      }
+
+      // Calculate date when new syringe will be needed
+      let dateToReplaceBy: Date | null = null;
+      if (injections.length > 0 && injectionsRemaining > 0) {
+        const lastInjection = injections[injections.length - 1];
+        const lastDate = new Date(lastInjection.date);
+        dateToReplaceBy = new Date(lastDate);
+        dateToReplaceBy.setDate(lastDate.getDate() + injectionsRemaining * 7);
+      }
+
+      return {
+        remainingVolume,
+        dateToReplaceBy,
+        injectionsRemaining,
+        syringeNumber,
+      };
+    };
+
+    const currentSyringeInfo = calculateCurrentSyringeStatus();
+    
+    // Calculate dose breakdowns for all unique doses in the scheme
+    const uniqueDoses = Array.from(new Set(TITRATION_SCHEME.map(s => s.dose)));
+    const doseBreakdowns = uniqueDoses.map(dose => 
+      calculateDoseBreakdown(dose, currentSyringeInfo?.remainingVolume || SYRINGE_CAPACITY)
+    );
+
     return {
       steps,
       currentDose,
@@ -187,6 +312,8 @@ export function useTitration() {
       ],
       syringeSchedule025: calculateSyringeSchedule(0.25),
       syringeSchedule05: calculateSyringeSchedule(0.5),
+      currentSyringeInfo,
+      doseBreakdowns,
     };
   }, [injections]);
 

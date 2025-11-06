@@ -10,7 +10,16 @@ import { format } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
 
 export function TitrationWidget() {
-  const { steps, currentDose, totalInjections, futureSchedule, syringeSchedule025, syringeSchedule05 } = useTitration();
+  const { 
+    steps, 
+    currentDose, 
+    totalInjections, 
+    futureSchedule, 
+    syringeSchedule025, 
+    syringeSchedule05,
+    currentSyringeInfo,
+    doseBreakdowns 
+  } = useTitration();
   const { language } = useLanguage();
   const t = (key: string) => (translations[language] as any)[key];
   const locale = language === "ru" ? ru : enUS;
@@ -107,6 +116,71 @@ export function TitrationWidget() {
 
           <TabsContent value="syringe" className="mt-4">
             <div className="space-y-6">
+              {/* Current Syringe Status */}
+              {currentSyringeInfo && (
+                <Card className="p-4 bg-primary/5 border-primary/20">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Syringe className="h-5 w-5 text-primary" />
+                    {t("currentSyringeStatus")}
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("syringeNumber")}:</span>
+                      <span className="font-medium">#{currentSyringeInfo.syringeNumber}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("remainingVolume")}:</span>
+                      <span className="font-medium">{currentSyringeInfo.remainingVolume.toFixed(2)} {t("ml")}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("injectionsRemaining")}:</span>
+                      <span className="font-medium">{currentSyringeInfo.injectionsRemaining}</span>
+                    </div>
+                    {currentSyringeInfo.dateToReplaceBy && (
+                      <div className="flex justify-between pt-2 border-t">
+                        <span className="text-muted-foreground">{t("buyNewSyringeBy")}:</span>
+                        <span className="font-bold text-primary">
+                          {format(currentSyringeInfo.dateToReplaceBy, "d MMMM yyyy", { locale })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {/* Dose Breakdown */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Syringe className="h-4 w-4" />
+                  {t("doseBreakdown")}
+                </h3>
+                <div className="space-y-2">
+                  {doseBreakdowns.map((breakdown) => (
+                    <Card key={breakdown.dose} className="p-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">{t("dose")}: {breakdown.dose} {t("mg")}</span>
+                          <Badge variant="secondary">{breakdown.totalShots} {t("shots")}</Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          {breakdown.shots05 > 0 && (
+                            <div>• {breakdown.shots05} × 0.5 {t("mg")}</div>
+                          )}
+                          {breakdown.shots025 > 0 && (
+                            <div>• {breakdown.shots025} × 0.25 {t("mg")}</div>
+                          )}
+                          {currentSyringeInfo && (
+                            <div className="pt-1 border-t mt-2">
+                              {t("canDoThisDose")}: <span className="font-medium">{breakdown.remainingInjectionsForThisDose} {t("times")}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <Syringe className="h-4 w-4" />
@@ -138,7 +212,7 @@ export function TitrationWidget() {
                           )}
                           {totalInjections >= syringe.startInjection && totalInjections <= syringe.endInjection && (
                             <Badge variant="default">
-                              {t("current")}
+                              {t("currentSyringe")}
                             </Badge>
                           )}
                         </div>
@@ -179,7 +253,7 @@ export function TitrationWidget() {
                           )}
                           {totalInjections >= syringe.startInjection && totalInjections <= syringe.endInjection && (
                             <Badge variant="default">
-                              {t("current")}
+                              {t("currentSyringe")}
                             </Badge>
                           )}
                         </div>
