@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
 
 export function TitrationWidget() {
-  const { steps, currentDose, totalInjections, futureSchedule, syringeCalculations } = useTitration();
+  const { steps, currentDose, totalInjections, futureSchedule, syringeSchedule025, syringeSchedule05 } = useTitration();
   const { language } = useLanguage();
   const t = (key: string) => (translations[language] as any)[key];
   const locale = language === "ru" ? ru : enUS;
@@ -106,34 +106,88 @@ export function TitrationWidget() {
           </TabsContent>
 
           <TabsContent value="syringe" className="mt-4">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                {t("syringeCapacity")}: 3 {t("ml")}
-              </p>
-              {syringeCalculations.map((calc, index) => (
-                <div key={index} className="p-4 rounded-lg border bg-card">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Syringe className="h-4 w-4 text-primary" />
-                    <h4 className="font-semibold">
-                      {t("syringeDivision")}: {calc.division} {t("ml")}
-                    </h4>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t("dosesPerSyringe")}:</span>
-                      <span className="font-medium">{calc.dosesPerSyringe.toFixed(1)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t("injectionsRemaining")}:</span>
-                      <span className="font-medium">{calc.injectionsNeeded}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t("syringesNeeded")}:</span>
-                      <span className="font-bold text-primary">{calc.syringesNeeded}</span>
-                    </div>
-                  </div>
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Syringe className="h-4 w-4" />
+                  {t("syringeSchedule025")}
+                </h3>
+                <div className="space-y-2">
+                  {syringeSchedule025.map((syringe) => (
+                    <Card key={syringe.syringeNumber} className="p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <p className="font-medium">
+                            {t("syringeNumber")} {syringe.syringeNumber}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {t("injections")} {syringe.startInjection} - {syringe.endInjection}
+                          </p>
+                          <p className="text-sm">
+                            {t("injectionsCount")}: {syringe.injectionsCount}
+                          </p>
+                          <p className="text-sm">
+                            {t("volumeUsed")}: {syringe.totalVolume.toFixed(2)} {t("ml")}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          {syringe.needNewSyringe && (
+                            <Badge variant="destructive">
+                              {t("buyNewSyringe")}
+                            </Badge>
+                          )}
+                          {totalInjections >= syringe.startInjection && totalInjections <= syringe.endInjection && (
+                            <Badge variant="default">
+                              {t("current")}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Syringe className="h-4 w-4" />
+                  {t("syringeSchedule05")}
+                </h3>
+                <div className="space-y-2">
+                  {syringeSchedule05.map((syringe) => (
+                    <Card key={syringe.syringeNumber} className="p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <p className="font-medium">
+                            {t("syringeNumber")} {syringe.syringeNumber}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {t("injections")} {syringe.startInjection} - {syringe.endInjection}
+                          </p>
+                          <p className="text-sm">
+                            {t("injectionsCount")}: {syringe.injectionsCount}
+                          </p>
+                          <p className="text-sm">
+                            {t("volumeUsed")}: {syringe.totalVolume.toFixed(2)} {t("ml")}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          {syringe.needNewSyringe && (
+                            <Badge variant="destructive">
+                              {t("buyNewSyringe")}
+                            </Badge>
+                          )}
+                          {totalInjections >= syringe.startInjection && totalInjections <= syringe.endInjection && (
+                            <Badge variant="default">
+                              {t("current")}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

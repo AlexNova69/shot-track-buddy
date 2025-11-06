@@ -28,6 +28,15 @@ export interface SyringeCalculation {
   syringesNeeded: number;
 }
 
+export interface SyringeUsageSchedule {
+  syringeNumber: number;
+  startInjection: number;
+  endInjection: number;
+  totalVolume: number;
+  injectionsCount: number;
+  needNewSyringe: boolean;
+}
+
 export function useTitration() {
   const [injections] = useLocalStorage("injections", []);
 
@@ -105,6 +114,67 @@ export function useTitration() {
       };
     };
 
+    // Calculate syringe usage schedule from first injection
+    const calculateSyringeSchedule = (division: number): SyringeUsageSchedule[] => {
+      const schedule: SyringeUsageSchedule[] = [];
+      let currentSyringeVolume = SYRINGE_CAPACITY;
+      let syringeNumber = 1;
+      let startInjection = 1;
+      let injectionsInCurrentSyringe = 0;
+      
+      // Go through all titration steps (16 injections total)
+      const totalPlannedInjections = TITRATION_SCHEME.reduce((sum, s) => sum + s.injections, 0);
+      
+      for (let i = 1; i <= totalPlannedInjections; i++) {
+        // Determine dose for this injection
+        let dose = MAINTENANCE_DOSE;
+        let accumulatedInjections = 0;
+        for (const scheme of TITRATION_SCHEME) {
+          if (i <= accumulatedInjections + scheme.injections) {
+            dose = scheme.dose;
+            break;
+          }
+          accumulatedInjections += scheme.injections;
+        }
+        
+        // Check if current syringe has enough volume
+        if (currentSyringeVolume >= dose) {
+          currentSyringeVolume -= dose;
+          injectionsInCurrentSyringe++;
+        } else {
+          // Save current syringe info
+          schedule.push({
+            syringeNumber,
+            startInjection,
+            endInjection: i - 1,
+            totalVolume: SYRINGE_CAPACITY - currentSyringeVolume,
+            injectionsCount: injectionsInCurrentSyringe,
+            needNewSyringe: true,
+          });
+          
+          // Start new syringe
+          syringeNumber++;
+          startInjection = i;
+          currentSyringeVolume = SYRINGE_CAPACITY - dose;
+          injectionsInCurrentSyringe = 1;
+        }
+      }
+      
+      // Add last syringe
+      if (injectionsInCurrentSyringe > 0) {
+        schedule.push({
+          syringeNumber,
+          startInjection,
+          endInjection: totalPlannedInjections,
+          totalVolume: SYRINGE_CAPACITY - currentSyringeVolume,
+          injectionsCount: injectionsInCurrentSyringe,
+          needNewSyringe: false,
+        });
+      }
+      
+      return schedule;
+    };
+
     return {
       steps,
       currentDose,
@@ -115,6 +185,8 @@ export function useTitration() {
         calculateSyringeUsage(0.5),
         calculateSyringeUsage(1.0),
       ],
+      syringeSchedule025: calculateSyringeSchedule(0.25),
+      syringeSchedule05: calculateSyringeSchedule(0.5),
     };
   }, [injections]);
 
