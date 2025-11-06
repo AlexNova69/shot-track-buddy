@@ -12,7 +12,7 @@ import { ru, enUS } from "date-fns/locale";
 export function TitrationWidget() {
   const { steps, currentDose, totalInjections, futureSchedule, syringeCalculations } = useTitration();
   const { language } = useLanguage();
-  const t: any = translations[language];
+  const t = (key: string) => (translations[language] as any)[key];
   const locale = language === "ru" ? ru : enUS;
 
   const totalInjectionsInScheme = steps.reduce((acc, step) => acc + step.injections, 0);
