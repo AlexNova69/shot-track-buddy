@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Calculator, Trash2, Settings, Bell, Download } from "lucide-react";
+import { User, Calculator, Trash2, Settings, Bell, Download, TrendingUp } from "lucide-react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useLanguage } from "@/hooks/useLanguage";
 import { toast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import { NotificationManager } from "@/components/NotificationManager";
 import { DataExporter } from "@/components/DataExporter";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { TitrationWidget } from "@/components/TitrationWidget";
 import { translations } from "@/lib/translations";
 import { Separator } from "@/components/ui/separator";
 
@@ -223,10 +224,14 @@ export default function Profile() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile" className="flex items-center gap-1">
             <User className="w-4 h-4" />
             <span className="hidden sm:inline">{t.profile}</span>
+          </TabsTrigger>
+          <TabsTrigger value="titration" className="flex items-center gap-1">
+            <TrendingUp className="w-4 h-4" />
+            <span className="hidden sm:inline">{t.titrationSchedule}</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="flex items-center gap-1">
             <Bell className="w-4 h-4" />
@@ -511,6 +516,10 @@ export default function Profile() {
               </AlertDialog>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="titration">
+          <TitrationWidget />
         </TabsContent>
 
         <TabsContent value="notifications">

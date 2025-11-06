@@ -8,7 +8,6 @@ import { WidgetCard } from "@/components/WidgetCard";
 import { MiniChart } from "@/components/MiniChart";
 import { RecentRecords } from "@/components/RecentRecords";
 import { ProgressInfoWidget } from "@/components/ProgressInfoWidget";
-import { TitrationWidget } from "@/components/TitrationWidget";
 import { InjectionDialog } from "@/components/dialogs/InjectionDialog";
 import { WeightDialog } from "@/components/dialogs/WeightDialog";
 import { SideEffectDialog } from "@/components/dialogs/SideEffectDialog";
@@ -62,8 +61,6 @@ export default function Home() {
   return (
     <div className="p-4 space-y-6">
       <ProgressInfoWidget />
-      
-      <TitrationWidget />
       
       <StatsBar />
       
