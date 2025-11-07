@@ -1,13 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Syringe, TrendingUp } from "lucide-react";
+import { Calendar, Syringe, TrendingUp, AlertTriangle } from "lucide-react";
 import { useTitration } from "@/hooks/useTitration";
+import { useSyringeManagement } from "@/hooks/useSyringeManagement";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translations } from "@/lib/translations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ru, enUS } from "date-fns/locale";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function TitrationWidget() {
   const { 
@@ -20,9 +22,53 @@ export function TitrationWidget() {
     currentSyringeInfo,
     doseBreakdowns 
   } = useTitration();
+  const { calculateSyringeStatus } = useSyringeManagement();
+  const syringeStatus = calculateSyringeStatus();
   const { language } = useLanguage();
   const t = (key: string) => (translations[language] as any)[key];
   const locale = language === "ru" ? ru : enUS;
+
+  // Calculate next injection details
+  const nextInjection = futureSchedule[0];
+  
+  // Calculate how to make the next injection with current syringe
+  const calculateNextInjectionBreakdown = () => {
+    if (!nextInjection || !syringeStatus.currentSyringe) return null;
+    
+    const dose = nextInjection.dose;
+    const syringeType = syringeStatus.currentSyringe.type;
+    const concentration = 1.34; // мг/мл
+    const volumeNeeded = dose / concentration;
+    
+    // Calculate shots breakdown based on syringe type
+    let shots = [];
+    if (syringeType === '0.25-0.5') {
+      // Prefer 0.5ml shots, then 0.25ml
+      let remaining = dose;
+      const shots05 = Math.floor(remaining / 0.5);
+      remaining = Math.round((remaining - shots05 * 0.5) * 100) / 100;
+      const shots025 = Math.round(remaining / 0.25);
+      
+      if (shots05 > 0) shots.push({ amount: 0.5, count: shots05 });
+      if (shots025 > 0) shots.push({ amount: 0.25, count: shots025 });
+    } else {
+      // Type 1.0 - single shot
+      shots.push({ amount: 1.0, count: Math.ceil(dose / 1.0) });
+    }
+    
+    const remainingAfter = Math.max(0, syringeStatus.remainingVolume - volumeNeeded);
+    const enoughForNext = syringeStatus.remainingVolume >= volumeNeeded;
+    
+    return {
+      dose,
+      shots,
+      volumeNeeded,
+      remainingAfter,
+      enoughForNext
+    };
+  };
+  
+  const nextInjectionBreakdown = calculateNextInjectionBreakdown();
 
   const totalInjectionsInScheme = steps.reduce((acc, step) => acc + step.injections, 0);
   const overallProgress = (totalInjections / totalInjectionsInScheme) * 100;
@@ -116,36 +162,104 @@ export function TitrationWidget() {
 
           <TabsContent value="syringe" className="mt-4">
             <div className="space-y-6">
-              {/* Current Syringe Status */}
-              {currentSyringeInfo && (
+              {/* Next Injection Info */}
+              {nextInjectionBreakdown && syringeStatus.currentSyringe && (
                 <Card className="p-4 bg-primary/5 border-primary/20">
                   <h3 className="font-semibold mb-3 flex items-center gap-2">
                     <Syringe className="h-5 w-5 text-primary" />
-                    {t("currentSyringeStatus")}
+                    {t("nextInjectionInfo")}
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b">
+                      <span className="text-sm text-muted-foreground">{t("dose")}:</span>
+                      <Badge variant="default">{nextInjectionBreakdown.dose} {t("mg")}</Badge>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm font-medium mb-2">{t("howToInject")}:</p>
+                      <div className="space-y-1 ml-4">
+                        {nextInjectionBreakdown.shots.map((shot, idx) => (
+                          <div key={idx} className="text-sm">
+                            • {shot.count} {t("shot")} × {shot.amount} {t("mg")}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{t("currentRemaining")}:</span>
+                        <span className="font-medium">{syringeStatus.remainingVolume.toFixed(2)} {t("ml")}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{t("afterInjection")}:</span>
+                        <span className="font-medium">{nextInjectionBreakdown.remainingAfter.toFixed(2)} {t("ml")}</span>
+                      </div>
+                    </div>
+                    
+                    {!nextInjectionBreakdown.enoughForNext && (
+                      <Alert variant="destructive" className="mt-3">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>{t("warning")}</AlertTitle>
+                        <AlertDescription>
+                          {t("notEnoughInSyringe")}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {/* Current Syringe Status from Profile */}
+              {syringeStatus.currentSyringe && (
+                <Card className="p-4 bg-secondary/5 border-secondary/20">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Syringe className="h-5 w-5 text-secondary" />
+                    {t("syringeFromProfile")}
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">{t("syringeNumber")}:</span>
-                      <span className="font-medium">#{currentSyringeInfo.syringeNumber}</span>
+                      <span className="text-muted-foreground">{t("syringeType")}:</span>
+                      <Badge variant="secondary">
+                        {syringeStatus.currentSyringe.type === '0.25-0.5' ? '0.25 / 0.5 мг' : '1.0 мг'}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("capacity")}:</span>
+                      <span className="font-medium">{syringeStatus.currentSyringe.capacity} {t("ml")}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("usedVolume")}:</span>
+                      <span className="font-medium">{syringeStatus.usedVolume.toFixed(2)} {t("ml")}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("remainingVolume")}:</span>
-                      <span className="font-medium">{currentSyringeInfo.remainingVolume.toFixed(2)} {t("ml")}</span>
+                      <span className="font-medium">{syringeStatus.remainingVolume.toFixed(2)} {t("ml")}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t("injectionsRemaining")}:</span>
-                      <span className="font-medium">{currentSyringeInfo.injectionsRemaining}</span>
+                      <span className="font-medium">{syringeStatus.remainingInjections}</span>
                     </div>
-                    {currentSyringeInfo.dateToReplaceBy && (
+                    {syringeStatus.dateToReplace && (
                       <div className="flex justify-between pt-2 border-t">
                         <span className="text-muted-foreground">{t("buyNewSyringeBy")}:</span>
                         <span className="font-bold text-primary">
-                          {format(currentSyringeInfo.dateToReplaceBy, "d MMMM yyyy", { locale })}
+                          {format(syringeStatus.dateToReplace, "d MMMM yyyy", { locale })}
                         </span>
                       </div>
                     )}
                   </div>
                 </Card>
+              )}
+              
+              {!syringeStatus.currentSyringe && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>{t("noActiveSyringe")}</AlertTitle>
+                  <AlertDescription>
+                    {t("addSyringeInProfile")}
+                  </AlertDescription>
+                </Alert>
               )}
 
               {/* Dose Breakdown */}
