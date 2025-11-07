@@ -22,19 +22,16 @@ export function useSyringeManagement() {
   const [syringes, setSyringes] = useLocalStorage<Syringe[]>("syringes", []);
   const [injections] = useLocalStorage<any[]>("injections", []);
 
-  // Конвертация дозы в объем в зависимости от типа шприца
+  // Конвертация дозы в объем с учетом концентрации
   const doseToVolume = (dose: string, syringeType: '0.25-0.5' | '1.0'): number => {
     const doseNum = parseFloat(dose);
+    const concentration = 1.34; // мг/мл
     
-    if (syringeType === '0.25-0.5') {
-      // Для шприца с делениями 0.25 и 0.5
-      // 0.25мг = 0.25мл, 0.5мг = 0.5мл, 1мг = 1мл, 1.5мг = 1.5мл
-      return doseNum;
-    } else {
-      // Для шприца с делением 1.0
-      // 1мг = 1мл, 1.5мг = 1.5мл
-      return doseNum;
-    }
+    // Формула: Объем (мл) = Доза (мг) / Концентрация (мг/мл)
+    // Например: 0.25 мг / 1.34 мг/мл ≈ 0.186 мл
+    //           1.0 мг / 1.34 мг/мл ≈ 0.746 мл
+    //           1.75 мг / 1.34 мг/мл ≈ 1.306 мл
+    return doseNum / concentration;
   };
 
   // Расчет статуса текущего шприца
