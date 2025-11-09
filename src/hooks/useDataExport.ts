@@ -11,6 +11,12 @@ export function useDataExport() {
   const [measurements, setMeasurements] = useLocalStorage("measurements", []);
   const [profile, setProfile] = useLocalStorage("profile", {});
 
+  // Проверка на мобильное устройство (Android/iOS)
+  const isMobileDevice = () => {
+    const ua = navigator.userAgent || '';
+    return /Android|iPhone|iPad|iPod/i.test(ua) || Capacitor.isNativePlatform();
+  };
+
   const exportToJSON = async () => {
     const data = {
       profile,
@@ -25,7 +31,8 @@ export function useDataExport() {
     const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
     const content = JSON.stringify(data, null, 2);
 
-    if (Capacitor.isNativePlatform()) {
+    // Используем Capacitor API для мобильных устройств
+    if (isMobileDevice()) {
       try {
         // Write file temporarily
         const result = await Filesystem.writeFile({
@@ -37,10 +44,10 @@ export function useDataExport() {
 
         // Share the file using native share dialog
         await Share.share({
-          title: 'Export Data',
-          text: 'Injection Tracker Data Export',
+          title: 'Экспорт данных',
+          text: 'Injection Tracker - экспорт данных',
           files: [result.uri],
-          dialogTitle: 'Save your data',
+          dialogTitle: 'Сохранить данные',
         });
       } catch (error) {
         console.error('Error exporting file:', error);
@@ -130,7 +137,8 @@ export function useDataExport() {
 
     const fileName = `${dataType}-${new Date().toISOString().split('T')[0]}.csv`;
 
-    if (Capacitor.isNativePlatform()) {
+    // Используем Capacitor API для мобильных устройств
+    if (isMobileDevice()) {
       try {
         // Write file temporarily
         const result = await Filesystem.writeFile({
@@ -142,10 +150,10 @@ export function useDataExport() {
 
         // Share the file using native share dialog
         await Share.share({
-          title: 'Export CSV',
-          text: `${dataType} Data Export`,
+          title: 'Экспорт CSV',
+          text: `Экспорт данных: ${dataType}`,
           files: [result.uri],
-          dialogTitle: 'Save your CSV data',
+          dialogTitle: 'Сохранить CSV данные',
         });
       } catch (error) {
         console.error('Error exporting CSV file:', error);
@@ -251,8 +259,8 @@ export function useDataExport() {
     const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
     const content = JSON.stringify(data, null, 2);
 
-    // 1) Native платформа: использовать Capacitor Share + Filesystem
-    if (Capacitor.isNativePlatform()) {
+    // 1) Используем Capacitor API для мобильных устройств
+    if (isMobileDevice()) {
       try {
         const result = await Filesystem.writeFile({
           path: fileName,
