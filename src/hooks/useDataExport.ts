@@ -278,9 +278,9 @@ export function useDataExport() {
       const file = new File([blob], fileName, { type: 'application/json' });
       const navAny = navigator as any;
 
-      // 2a) Пытаемся share с файлами
-      if (typeof navigator !== 'undefined' && 'share' in navigator) {
-        if (!navAny?.canShare || navAny.canShare({ files: [file] })) {
+      // 2a) Пытаемся share с файлами (только если браузер точно поддерживает файлы)
+      if (typeof navigator !== 'undefined' && 'share' in navigator && navAny?.canShare) {
+        if (navAny.canShare({ files: [file] })) {
           try {
             await navAny.share({
               title: 'Экспорт данных Injection Tracker',
@@ -289,32 +289,9 @@ export function useDataExport() {
             });
             return { method: 'share-files' } as const;
           } catch (e) {
-            // Продолжаем к следующим вариантам
+            console.error('Share with files failed:', e);
+            // Продолжаем к скачиванию
           }
-        }
-
-        // 2b) Share с data:URL
-        const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
-        try {
-          await navAny.share({
-            title: 'Экспорт данных Injection Tracker',
-            text: fileName,
-            url: dataUrl,
-          });
-          return { method: 'share-url' } as const;
-        } catch (e) {
-          // Продолжаем к тексту
-        }
-
-        // 2c) Share как текст
-        try {
-          await navAny.share({
-            title: 'Экспорт данных Injection Tracker',
-            text: `${fileName}\n\n${content}`,
-          });
-          return { method: 'share-text' } as const;
-        } catch (e) {
-          // Продолжаем к локальным фолбэкам без ошибок пользователю
         }
       }
 
@@ -336,7 +313,7 @@ export function useDataExport() {
           window.open(dataUrl, '_blank');
           return { method: 'open' } as const;
         } catch (e2) {
-          // 5) Фолбэк: буфер обмена
+          // 5) Крайний фолбэк: буфер обмена
           try {
             await navigator.clipboard.writeText(content);
             return { method: 'clipboard' } as const;
