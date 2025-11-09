@@ -86,10 +86,10 @@ export function TitrationWidget() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="schedule" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="schedule">{t("schedule")}</TabsTrigger>
-            <TabsTrigger value="future">{t("futureInjections")}</TabsTrigger>
-            <TabsTrigger value="syringe">{t("syringeCalc")}</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto">
+            <TabsTrigger value="schedule" className="text-xs sm:text-sm">{t("schedule")}</TabsTrigger>
+            <TabsTrigger value="future" className="text-xs sm:text-sm">{t("futureInjections")}</TabsTrigger>
+            <TabsTrigger value="syringe" className="text-xs sm:text-sm">{t("syringeCalc")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="schedule" className="space-y-4 mt-4">
@@ -104,7 +104,7 @@ export function TitrationWidget() {
             <div className="space-y-3">
               {steps.map((step, index) => (
                 <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Badge variant={step.isActive ? "default" : step.completed === step.injections ? "secondary" : "outline"}>
                         {step.dose} {t("mg")}
@@ -135,9 +135,9 @@ export function TitrationWidget() {
             {futureSchedule.length > 0 ? (
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {futureSchedule.map((injection, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                     <div className="flex items-center gap-3">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium">
                           {t("injection")} #{injection.injectionNumber}
@@ -147,7 +147,7 @@ export function TitrationWidget() {
                         </p>
                       </div>
                     </div>
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="self-start sm:self-center">
                       {injection.dose} {t("mg")}
                     </Badge>
                   </div>
@@ -169,8 +169,8 @@ export function TitrationWidget() {
                     <Syringe className="h-5 w-5 text-primary" />
                     {t("nextInjectionInfo")}
                   </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center pb-2 border-b">
+                    <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pb-2 border-b">
                       <span className="text-sm text-muted-foreground">{t("dose")}:</span>
                       <Badge variant="default">{nextInjectionBreakdown.dose} {t("mg")}</Badge>
                     </div>
@@ -187,11 +187,11 @@ export function TitrationWidget() {
                     </div>
                     
                     <div className="pt-2 space-y-2">
-                      <div className="flex justify-between text-sm">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1 text-sm">
                         <span className="text-muted-foreground">{t("currentRemaining")}:</span>
                         <span className="font-medium">{syringeStatus.remainingVolume.toFixed(2)} {t("ml")}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1 text-sm">
                         <span className="text-muted-foreground">{t("afterInjection")}:</span>
                         <span className="font-medium">{nextInjectionBreakdown.remainingAfter.toFixed(2)} {t("ml")}</span>
                       </div>
@@ -218,30 +218,30 @@ export function TitrationWidget() {
                     {t("syringeFromProfile")}
                   </h3>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                       <span className="text-muted-foreground">{t("syringeType")}:</span>
                       <Badge variant="secondary">
                         {syringeStatus.currentSyringe.type === '0.25-0.5' ? '0.25 / 0.5 мг' : '1.0 мг'}
                       </Badge>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                       <span className="text-muted-foreground">{t("capacity")}:</span>
                       <span className="font-medium">{syringeStatus.currentSyringe.capacity} {t("ml")}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                       <span className="text-muted-foreground">{t("usedVolume")}:</span>
                       <span className="font-medium">{syringeStatus.usedVolume.toFixed(2)} {t("ml")}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                       <span className="text-muted-foreground">{t("remainingVolume")}:</span>
                       <span className="font-medium">{syringeStatus.remainingVolume.toFixed(2)} {t("ml")}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                       <span className="text-muted-foreground">{t("injectionsRemaining")}:</span>
                       <span className="font-medium">{syringeStatus.remainingInjections}</span>
                     </div>
                     {syringeStatus.dateToReplace && (
-                      <div className="flex justify-between pt-2 border-t">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1 pt-2 border-t">
                         <span className="text-muted-foreground">{t("buyNewSyringeBy")}:</span>
                         <span className="font-bold text-primary">
                           {format(syringeStatus.dateToReplace, "d MMMM yyyy", { locale })}
@@ -272,7 +272,7 @@ export function TitrationWidget() {
                   {doseBreakdowns.map((breakdown) => (
                     <Card key={breakdown.dose} className="p-3">
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <span className="font-medium">{t("dose")}: {breakdown.dose} {t("mg")}</span>
                           <Badge variant="secondary">{breakdown.totalShots} {t("shots")}</Badge>
                         </div>
@@ -303,8 +303,8 @@ export function TitrationWidget() {
                 <div className="space-y-2">
                   {syringeSchedule025.map((syringe) => (
                     <Card key={syringe.syringeNumber} className="p-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="space-y-1 flex-1">
                           <p className="font-medium">
                             {t("syringeNumber")} {syringe.syringeNumber}
                           </p>
@@ -318,14 +318,14 @@ export function TitrationWidget() {
                             {t("volumeUsed")}: {syringe.totalVolume.toFixed(2)} {t("ml")}
                           </p>
                         </div>
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-row sm:flex-col gap-1">
                           {syringe.needNewSyringe && (
-                            <Badge variant="destructive">
+                            <Badge variant="destructive" className="text-xs">
                               {t("buyNewSyringe")}
                             </Badge>
                           )}
                           {totalInjections >= syringe.startInjection && totalInjections <= syringe.endInjection && (
-                            <Badge variant="default">
+                            <Badge variant="default" className="text-xs">
                               {t("currentSyringe")}
                             </Badge>
                           )}
@@ -344,8 +344,8 @@ export function TitrationWidget() {
                 <div className="space-y-2">
                   {syringeSchedule05.map((syringe) => (
                     <Card key={syringe.syringeNumber} className="p-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="space-y-1 flex-1">
                           <p className="font-medium">
                             {t("syringeNumber")} {syringe.syringeNumber}
                           </p>
@@ -359,14 +359,14 @@ export function TitrationWidget() {
                             {t("volumeUsed")}: {syringe.totalVolume.toFixed(2)} {t("ml")}
                           </p>
                         </div>
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-row sm:flex-col gap-1">
                           {syringe.needNewSyringe && (
-                            <Badge variant="destructive">
+                            <Badge variant="destructive" className="text-xs">
                               {t("buyNewSyringe")}
                             </Badge>
                           )}
                           {totalInjections >= syringe.startInjection && totalInjections <= syringe.endInjection && (
-                            <Badge variant="default">
+                            <Badge variant="default" className="text-xs">
                               {t("currentSyringe")}
                             </Badge>
                           )}
