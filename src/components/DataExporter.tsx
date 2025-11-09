@@ -59,12 +59,14 @@ export function DataExporter() {
         'share-files': { title: 'Файл передан', desc: 'Файл передан через системное окно «Поделиться»' },
         'download': { title: 'Файл сохранён', desc: 'JSON-файл скачан в загрузки' },
         'open': { title: 'Файл открыт', desc: 'JSON-файл открыт в новой вкладке — используйте меню для сохранения/отправки' },
-        'clipboard': { title: 'Данные скопированы', desc: 'JSON скопирован в буфер — вставьте в заметки/чат' },
-        'copy-textarea': { title: 'Данные скопированы', desc: 'JSON скопирован — вставьте в заметки/чат' },
       } as const;
       const msg = map[res?.method as keyof typeof map] ?? { title: 'Готово', desc: 'Данные подготовлены' };
       toast({ title: msg.title, description: msg.desc });
     } catch (error) {
+      // Если пользователь отменил - не показываем ошибку
+      if (error instanceof Error && error.message === 'Отменено пользователем') {
+        return;
+      }
       toast({
         title: "Ошибка передачи",
         description: error instanceof Error ? error.message : "Не удалось поделиться данными",

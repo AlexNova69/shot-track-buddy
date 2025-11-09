@@ -251,7 +251,7 @@ export function useDataExport() {
     const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
     const content = JSON.stringify(data, null, 2);
 
-    // 1) Native: использовать Capacitor Share + Filesystem если доступно
+    // 1) Native платформа: использовать Capacitor Share + Filesystem
     if (Capacitor.isNativePlatform()) {
       try {
         const result = await Filesystem.writeFile({
@@ -261,70 +261,71 @@ export function useDataExport() {
           encoding: Encoding.UTF8,
         });
         await Share.share({
-          title: 'Экспорт данных Injection Tracker',
-          text: 'Экспорт JSON',
+          title: 'Экспорт данных',
+          text: 'Injection Tracker - экспорт данных',
           files: [result.uri],
+          dialogTitle: 'Поделиться файлом',
         });
         return { method: 'native-share' } as const;
       } catch (error) {
         console.error('Native share failed:', error);
-        // Падать не будем — продолжим веб-фолбэками
+        throw new Error('Не удалось открыть системное меню для передачи файла');
       }
     }
 
-    // 2) Web/WebView
-    try {
-      const blob = new Blob([content], { type: 'application/json' });
-      const file = new File([blob], fileName, { type: 'application/json' });
-      const navAny = navigator as any;
+    // 2) Web/WebView: пытаемся использовать Web Share API с файлом
+    const blob = new Blob([content], { type: 'application/json' });
+    const file = new File([blob], fileName, { type: 'application/json' });
 
-      // 2a) Пытаемся share с файлами (только если браузер точно поддерживает файлы)
-      if (typeof navigator !== 'undefined' && 'share' in navigator && navAny?.canShare) {
-        if (navAny.canShare({ files: [file] })) {
-          try {
-            await navAny.share({
-              title: 'Экспорт данных Injection Tracker',
-              text: 'Экспорт JSON',
-              files: [file],
-            });
-            return { method: 'share-files' } as const;
-          } catch (e) {
-            console.error('Share with files failed:', e);
-            // Продолжаем к скачиванию
-          }
-        }
-      }
-
-      // 3) Фолбэк: программная загрузка файла
+    // 2a) Агрессивно пытаемся использовать navigator.share с файлом
+    if (typeof navigator !== 'undefined' && 'share' in navigator) {
       try {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        return { method: 'download' } as const;
-      } catch (e) {
-        // 4) Фолбэк: открыть в новой вкладке (чтобы сохранить/шарить из меню)
-        try {
-          const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
-          window.open(dataUrl, '_blank');
-          return { method: 'open' } as const;
-        } catch (e2) {
-          // 5) Крайний фолбэк: буфер обмена
-          try {
-            await navigator.clipboard.writeText(content);
-            return { method: 'clipboard' } as const;
-          } catch (e3) {
-            throw new Error('Не удалось поделиться или сохранить файл');
-          }
+        // Пытаемся поделиться файлом напрямую
+        await navigator.share({
+          title: 'Экспорт данных',
+          text: 'Injection Tracker - экспорт данных',
+          files: [file],
+        });
+        return { method: 'share-files' } as const;
+      } catch (shareError: any) {
+        console.error('Share API with file failed:', shareError);
+        
+        // Если пользователь отменил - не показываем ошибку
+        if (shareError?.name === 'AbortError') {
+          throw new Error('Отменено пользователем');
         }
+        
+        // Если share не поддерживает файлы, переходим к fallback
+        // Не выбрасываем ошибку, продолжаем к загрузке
       }
-    } catch (error) {
-      console.error('Web share/download failed:', error);
-      throw error;
+    }
+
+    // 3) Фолбэк: программная загрузка файла (для браузеров без Web Share API)
+    try {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return { method: 'download' } as const;
+    } catch (downloadError) {
+      console.error('Download fallback failed:', downloadError);
+      
+      // 4) Крайний фолбэк: открыть data URL в новой вкладке
+      try {
+        const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
+        const opened = window.open(dataUrl, '_blank');
+        if (opened) {
+          return { method: 'open' } as const;
+        }
+      } catch (openError) {
+        console.error('Open data URL failed:', openError);
+      }
+      
+      throw new Error('Не удалось поделиться файлом. Попробуйте использовать кнопку "Экспортировать всё" вместо этого.');
     }
   };
 
