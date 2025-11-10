@@ -1,7 +1,14 @@
 import { useLocalStorage } from "./useLocalStorage";
-import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
-import { Capacitor } from '@capacitor/core';
+import { useCallback } from 'react';
+
+// Расширяем Window interface для ReactNativeWebView
+declare global {
+  interface Window {
+    ReactNativeWebView?: {
+      postMessage: (message: string) => void;
+    };
+  }
+}
 
 export function useDataExport() {
   const [injections, setInjections] = useLocalStorage("injections", []);
@@ -11,200 +18,128 @@ export function useDataExport() {
   const [measurements, setMeasurements] = useLocalStorage("measurements", []);
   const [profile, setProfile] = useLocalStorage("profile", {});
 
-  // Проверка на мобильное устройство (Android/iOS)
-  const isMobileDevice = () => {
-    const ua = navigator.userAgent || '';
-    return /Android|iPhone|iPad|iPod/i.test(ua) || Capacitor.isNativePlatform();
-  };
+  // Универсальная проверка платформы
+  const isNativeApp = useCallback(() => {
+    return typeof window !== 'undefined' && window.ReactNativeWebView;
+  }, []);
 
-  const exportToJSON = async () => {
-    const data = {
-      profile,
-      injections,
-      weights,
-      sideEffects,
-      injectionSites,
-      measurements,
-      exportDate: new Date().toISOString(),
-    };
+  // Универсальная функция экспорта JSON
+  const exportToJSON = useCallback(async () => {
+    try {
+      const data = {
+        profile,
+        injections,
+        weights,
+        sideEffects,
+        injectionSites,
+        measurements,
+        exportDate: new Date().toISOString(),
+      };
 
-    const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
-    const content = JSON.stringify(data, null, 2);
+      const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
+      const content = JSON.stringify(data, null, 2);
 
-    // Используем Capacitor API для мобильных устройств
-    if (isMobileDevice()) {
-      try {
-        // Write file temporarily
-        const result = await Filesystem.writeFile({
-          path: fileName,
+      // Для нативного приложения (APK)
+      if (isNativeApp()) {
+        window.ReactNativeWebView?.postMessage(JSON.stringify({
+          type: 'EXPORT_DATA',
           data: content,
-          directory: Directory.Cache,
-          encoding: Encoding.UTF8,
-        });
-
-        // Share the file using native share dialog
-        await Share.share({
-          title: 'Экспорт данных',
-          text: 'Injection Tracker - экспорт данных',
-          files: [result.uri],
-          dialogTitle: 'Сохранить данные',
-        });
-      } catch (error) {
-        console.error('Error exporting file:', error);
-        throw error;
+          filename: fileName,
+          mimeType: 'application/json'
+        }));
+        return;
       }
-    } else {
-      // Web/WebView: download-first strategy with resilient fallbacks (AppsGeyser safe)
-      try {
-        const blob = new Blob([content], { type: 'application/json' });
-        const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
-        const isAndroidWebView = /Android/i.test(ua) && /wv/i.test(ua);
 
-        // a) Direct download (skip Web Share to avoid "data transfer" errors in Android WebView)
-        try {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          return;
-        } catch {}
+      // Для веб-версии - стандартный подход
+      const blob = new Blob([content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export error:", error);
+      throw new Error("Не удалось экспортировать данные");
+    }
+  }, [profile, injections, weights, sideEffects, injectionSites, measurements, isNativeApp]);
 
-        // b) Open data URL (lets user save/share from menu)
-        const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
-        try {
-          const win = window.open(dataUrl, '_blank');
-          if (win) return;
-        } catch {}
-        try {
-          window.location.href = dataUrl;
-          return;
-        } catch {}
+  // Универсальная функция экспорта CSV
+  const exportToCSV = useCallback(async (dataType: "injections" | "weights" | "sideEffects") => {
+    try {
+      let data: any[] = [];
+      let headers: string[] = [];
+      let fileName = '';
 
-        // c) Clipboard fallback
-        try {
-          await navigator.clipboard.writeText(content);
-          return;
-        } catch {}
-
-        throw new Error('Web export failed');
-      } catch (err) {
-        console.error('Web export failed:', err);
-        throw err;
+      switch (dataType) {
+        case "injections":
+          data = injections;
+          headers = ["Дата", "Доза", "Место укола", "Комментарий"];
+          fileName = `injections-${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        case "weights":
+          data = weights;
+          headers = ["Дата", "Вес"];
+          fileName = `weights-${new Date().toISOString().split('T')[0]}.csv`;
+          break;
+        case "sideEffects":
+          data = sideEffects;
+          headers = ["Дата", "Комментарий"];
+          fileName = `side-effects-${new Date().toISOString().split('T')[0]}.csv`;
+          break;
       }
-    }
-  };
 
-  const exportToCSV = async (dataType: "injections" | "weights" | "sideEffects") => {
-    let data: any[] = [];
-    let headers: string[] = [];
+      if (data.length === 0) {
+        throw new Error("Нет данных для экспорта");
+      }
 
-    switch (dataType) {
-      case "injections":
-        data = injections;
-        headers = ["Дата", "Доза", "Место укола", "Комментарий"];
-        break;
-      case "weights":
-        data = weights;
-        headers = ["Дата", "Вес"];
-        break;
-      case "sideEffects":
-        data = sideEffects;
-        headers = ["Дата", "Комментарий"];
-        break;
-    }
+      const csvContent = [
+        headers.join(","),
+        ...data.map(row => {
+          switch (dataType) {
+            case "injections":
+              return [row.date, row.dose, row.site, `"${row.comment || ""}"`].join(",");
+            case "weights":
+              return [row.date, row.weight].join(",");
+            case "sideEffects":
+              return [row.date, `"${row.comment || ""}"`].join(",");
+            default:
+              return "";
+          }
+        })
+      ].join("\n");
 
-    if (data.length === 0) return;
-
-    const csvContent = [
-      headers.join(","),
-      ...data.map(row => {
-        switch (dataType) {
-          case "injections":
-            return [row.date, row.dose, row.site, `"${row.comment || ""}"`].join(",");
-          case "weights":
-            return [row.date, row.weight].join(",");
-          case "sideEffects":
-            return [row.date, `"${row.comment || ""}"`].join(",");
-          default:
-            return "";
-        }
-      })
-    ].join("\n");
-
-    const fileName = `${dataType}-${new Date().toISOString().split('T')[0]}.csv`;
-
-    // Используем Capacitor API для мобильных устройств
-    if (isMobileDevice()) {
-      try {
-        // Write file temporarily
-        const result = await Filesystem.writeFile({
-          path: fileName,
+      // Для нативного приложения (APK)
+      if (isNativeApp()) {
+        window.ReactNativeWebView?.postMessage(JSON.stringify({
+          type: 'EXPORT_DATA',
           data: csvContent,
-          directory: Directory.Cache,
-          encoding: Encoding.UTF8,
-        });
-
-        // Share the file using native share dialog
-        await Share.share({
-          title: 'Экспорт CSV',
-          text: `Экспорт данных: ${dataType}`,
-          files: [result.uri],
-          dialogTitle: 'Сохранить CSV данные',
-        });
-      } catch (error) {
-        console.error('Error exporting CSV file:', error);
-        throw error;
+          filename: fileName,
+          mimeType: 'text/csv'
+        }));
+        return;
       }
-    } else {
-      // Web/WebView: download-first strategy with resilient fallbacks (AppsGeyser safe)
-      try {
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
-        const isAndroidWebView = /Android/i.test(ua) && /wv/i.test(ua);
 
-        // a) Direct download (skip Web Share in Android WebView)
-        try {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          return;
-        } catch {}
-
-        // b) Open data URL
-        const dataUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
-        try {
-          const win = window.open(dataUrl, '_blank');
-          if (win) return;
-        } catch {}
-        try {
-          window.location.href = dataUrl;
-          return;
-        } catch {}
-
-        // c) Clipboard fallback
-        try {
-          await navigator.clipboard.writeText(csvContent);
-          return;
-        } catch {}
-
-        throw new Error('Web CSV export failed');
-      } catch (err) {
-        console.error('Web CSV export failed:', err);
-        throw err;
-      }
+      // Для веб-версии
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("CSV Export error:", error);
+      throw new Error("Не удалось экспортировать CSV данные");
     }
-  };
+  }, [injections, weights, sideEffects, isNativeApp]);
 
-  const importFromJSON = (file: File) => {
+  // Функция импорта (остается без изменений)
+  const importFromJSON = useCallback((file: File) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -243,102 +178,74 @@ export function useDataExport() {
       };
       reader.readAsText(file);
     });
-  };
+  }, [setInjections, setWeights, setSideEffects, setInjectionSites, setMeasurements, setProfile]);
 
-  const shareJSON = async () => {
-    const data = {
-      profile,
-      injections,
-      weights,
-      sideEffects,
-      injectionSites,
-      measurements,
-      exportDate: new Date().toISOString(),
-    };
-
-    const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
-    const content = JSON.stringify(data, null, 2);
-
-    // 1) Используем Capacitor API для мобильных устройств
-    if (isMobileDevice()) {
-      try {
-        const result = await Filesystem.writeFile({
-          path: fileName,
-          data: content,
-          directory: Directory.Cache,
-          encoding: Encoding.UTF8,
-        });
-        await Share.share({
-          title: 'Экспорт данных',
-          text: 'Injection Tracker - экспорт данных',
-          files: [result.uri],
-          dialogTitle: 'Поделиться файлом',
-        });
-        return { method: 'native-share' } as const;
-      } catch (error) {
-        console.error('Native share failed:', error);
-        throw new Error('Не удалось открыть системное меню для передачи файла');
-      }
-    }
-
-    // 2) Web/WebView: пытаемся использовать Web Share API с файлом
-    const blob = new Blob([content], { type: 'application/json' });
-    const file = new File([blob], fileName, { type: 'application/json' });
-
-    // 2a) Агрессивно пытаемся использовать navigator.share с файлом
-    if (typeof navigator !== 'undefined' && 'share' in navigator) {
-      try {
-        // Пытаемся поделиться файлом напрямую
-        await navigator.share({
-          title: 'Экспорт данных',
-          text: 'Injection Tracker - экспорт данных',
-          files: [file],
-        });
-        return { method: 'share-files' } as const;
-      } catch (shareError: any) {
-        console.error('Share API with file failed:', shareError);
-        
-        // Если пользователь отменил - не показываем ошибку
-        if (shareError?.name === 'AbortError') {
-          throw new Error('Отменено пользователем');
-        }
-        
-        // Если share не поддерживает файлы, переходим к fallback
-        // Не выбрасываем ошибку, продолжаем к загрузке
-      }
-    }
-
-    // 3) Фолбэк: программная загрузка файла (для браузеров без Web Share API)
+  // Универсальная функция поделиться JSON
+  const shareJSON = useCallback(async () => {
     try {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      return { method: 'download' } as const;
-    } catch (downloadError) {
-      console.error('Download fallback failed:', downloadError);
-      
-      // 4) Крайний фолбэк: открыть data URL в новой вкладке
-      try {
-        const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(content)}`;
-        const opened = window.open(dataUrl, '_blank');
-        if (opened) {
-          return { method: 'open' } as const;
-        }
-      } catch (openError) {
-        console.error('Open data URL failed:', openError);
-      }
-      
-      throw new Error('Не удалось поделиться файлом. Попробуйте использовать кнопку "Экспортировать всё" вместо этого.');
-    }
-  };
+      const data = {
+        profile,
+        injections,
+        weights,
+        sideEffects,
+        injectionSites,
+        measurements,
+        exportDate: new Date().toISOString(),
+      };
 
-  // Simple clipboard export that avoids file system/share permissions
-  const copyJSONToClipboard = async () => {
+      const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
+      const content = JSON.stringify(data, null, 2);
+
+      // Для нативного приложения (APK)
+      if (isNativeApp()) {
+        window.ReactNativeWebView?.postMessage(JSON.stringify({
+          type: 'SHARE_DATA',
+          data: content,
+          filename: fileName,
+          mimeType: 'application/json'
+        }));
+        return { method: 'native-share' } as const;
+      }
+
+      // Для веб-версии - пробуем Web Share API
+      if (navigator.share && navigator.canShare) {
+        try {
+          const blob = new Blob([content], { type: "application/json" });
+          const file = new File([blob], fileName, { type: "application/json" });
+          
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'Экспорт данных Semaglutide Tracker',
+              text: 'Мои данные о применении семаглутида'
+            });
+            return { method: 'native-share' } as const;
+          }
+        } catch (shareError) {
+          console.log('Web Share API не поддерживается, используем fallback');
+        }
+      }
+
+      // Fallback для веб-версии - скачивание
+      const blob = new Blob([content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      return { method: 'download' } as const;
+    } catch (error) {
+      console.error("Share error:", error);
+      throw new Error("Не удалось поделиться данными");
+    }
+  }, [profile, injections, weights, sideEffects, injectionSites, measurements, isNativeApp]);
+
+  // Функция копирования в буфер обмена (остается без изменений)
+  const copyJSONToClipboard = useCallback(async () => {
     const data = {
       profile,
       injections,
@@ -373,7 +280,7 @@ export function useDataExport() {
         throw new Error('Не удалось скопировать данные.');
       }
     }
-  };
+  }, [profile, injections, weights, sideEffects, injectionSites, measurements]);
 
   return {
     exportToJSON,
