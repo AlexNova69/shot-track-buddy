@@ -1,43 +1,31 @@
 {
-  "background_color": "#ffffff",
-  "description": "Мобильное приложение для отслеживания инъекций, веса и побочных эффектов. Ведите медицинский дневник с графиками и аналитикой.",
-  "dir": "ltr",
+  "name": "Shot Track Buddy",
+  "short_name": "ShotTrack",
+  "description": "Трекер инъекций гормонов, инсулина и других лекарств",
+  "start_url": "/shot-track-buddy/",
+  "scope": "/shot-track-buddy/",
   "display": "standalone",
-  "name": "shot-track-buddy.lovable",
-  "orientation": "any",
-  "scope": "/",
-  "short_name": "shot-track-buddy.lovable",
-  "start_url": "/",
-  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "lang": "ru",
   "icons": [
     {
-      "src": "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4e72c411-010b-44a3-99e4-72dc84476cd9/id-preview-f1454db2--4ce35e07-8285-4248-beab-ef292f053c4b.lovable.app-1762762050730.png",
+      "src": "/shot-track-buddy/icon-192.png",
+      "sizes": "192x192",
       "type": "image/png",
-      "sizes": "1920x1080",
-      "isSquare": false,
-      "isPng": true,
-      "isWebp": false,
-      "isJpg": false,
-      "width": 1920,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "purpose": "maskable any"
     },
     {
-      "src": "https://shot-track-buddy.lovable.app/favicon.ico",
-      "type": "image/x-icon",
-      "sizes": "73x74",
-      "isSquare": false,
-      "isPng": false,
-      "isWebp": false,
-      "isJpg": false,
-      "width": 73,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "src": "/shot-track-buddy/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/shot-track-buddy/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
-  ],
-  "categories": [
-    "medical"
   ]
 }
