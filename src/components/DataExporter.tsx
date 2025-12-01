@@ -17,15 +17,15 @@ export function DataExporter() {
 
   const handleExportJSON = async () => {
     try {
-      const result = await exportToJSON();
+      await exportToJSON();
       toast({
         title: t.dataExported,
-        description: result?.message || t.jsonSaved,
+        description: t.jsonSaved,
       });
     } catch (error) {
       toast({
         title: t.exportError,
-        description: error instanceof Error ? error.message : t.exportFailed,
+        description: t.exportFailed,
         variant: "destructive",
       });
     }
@@ -33,15 +33,15 @@ export function DataExporter() {
 
   const handleExportCSV = async (dataType: "injections" | "weights" | "sideEffects") => {
     try {
-      const result = await exportToCSV(dataType);
+      await exportToCSV(dataType);
       toast({
         title: t.dataExported,
-        description: result?.message || t.csvSaved,
+        description: t.csvSaved,
       });
     } catch (error) {
       toast({
         title: t.exportError,
-        description: error instanceof Error ? error.message : t.exportFailed,
+        description: t.exportFailed,
         variant: "destructive",
       });
     }
@@ -54,17 +54,16 @@ export function DataExporter() {
   const handleShareJSON = async () => {
     try {
       const res = await shareJSON();
-      const map: Record<string, { title: string; desc: string }> = {
+      const map = {
         'native-share': { title: 'Файл передан', desc: 'Файл передан через системное окно «Поделиться»' },
         'share-files': { title: 'Файл передан', desc: 'Файл передан через системное окно «Поделиться»' },
-        'share-text': { title: 'Данные переданы', desc: 'Данные переданы через системное меню' },
         'download': { title: 'Файл сохранён', desc: 'JSON-файл скачан в загрузки' },
-        'open': { title: 'Файл открыт', desc: 'Скопируйте текст и отправьте через мессенджер' },
-        'clipboard': { title: 'Скопировано', desc: res?.message || 'Данные скопированы в буфер обмена' },
-      };
-      const msg = map[res?.method as string] ?? { title: 'Готово', desc: res?.message || 'Данные подготовлены' };
+        'open': { title: 'Файл открыт', desc: 'JSON-файл открыт в новой вкладке — используйте меню для сохранения/отправки' },
+      } as const;
+      const msg = map[res?.method as keyof typeof map] ?? { title: 'Готово', desc: 'Данные подготовлены' };
       toast({ title: msg.title, description: msg.desc });
     } catch (error) {
+      // Если пользователь отменил - не показываем ошибку
       if (error instanceof Error && error.message === 'Отменено пользователем') {
         return;
       }
