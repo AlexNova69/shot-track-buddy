@@ -18,10 +18,34 @@ export function useDataExport() {
   const [measurements, setMeasurements] = useLocalStorage("measurements", []);
   const [profile, setProfile] = useLocalStorage("profile", {});
 
-  // Проверка на Android WebView (AppsGeyser и подобные)
+  // Улучшенная проверка на Android WebView (AppsGeyser, TWA и подобные)
   const isAndroidWebView = useCallback(() => {
     const ua = navigator.userAgent.toLowerCase();
-    return ua.includes('android') && (ua.includes('wv') || ua.includes('webview'));
+    
+    // Проверяем на Android
+    if (!ua.includes('android')) return false;
+    
+    // Явные маркеры WebView
+    if (ua.includes('wv') || ua.includes('webview')) return true;
+    
+    // AppsGeyser и другие обёртки часто не добавляют 'wv', но:
+    // 1. Отсутствует Chrome/Firefox/Samsung Browser и т.д.
+    // 2. Или присутствует Version/X.X (старый Android Browser / WebView)
+    const hasBrowserMarker = 
+      (ua.includes('chrome') && !ua.includes('version/')) ||
+      ua.includes('firefox') ||
+      ua.includes('samsungbrowser') ||
+      ua.includes('opera') ||
+      ua.includes('ucbrowser') ||
+      ua.includes('edge');
+    
+    // Если Android но нет маркера браузера - скорее всего WebView
+    if (!hasBrowserMarker) return true;
+    
+    // Проверка на standalone режим (PWA/TWA)
+    if (window.matchMedia?.('(display-mode: standalone)').matches) return true;
+    
+    return false;
   }, []);
 
   // Проверка на мобильное устройство
@@ -29,19 +53,23 @@ export function useDataExport() {
     return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
   }, []);
 
+  // Получаем данные для экспорта
+  const getExportData = useCallback(() => {
+    return {
+      profile,
+      injections,
+      weights,
+      sideEffects,
+      injectionSites,
+      measurements,
+      exportDate: new Date().toISOString(),
+    };
+  }, [profile, injections, weights, sideEffects, injectionSites, measurements]);
+
   // Универсальная функция экспорта JSON
   const exportToJSON = useCallback(async () => {
     try {
-      const data = {
-        profile,
-        injections,
-        weights,
-        sideEffects,
-        injectionSites,
-        measurements,
-        exportDate: new Date().toISOString(),
-      };
-
+      const data = getExportData();
       const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
       const content = JSON.stringify(data, null, 2);
 
@@ -53,18 +81,34 @@ export function useDataExport() {
           filename: fileName,
           mimeType: 'application/json'
         }));
-        return;
+        return { method: 'rn-webview' };
       }
 
-      // Для Android WebView (AppsGeyser) - используем data URL
+      // Для Android WebView (AppsGeyser и подобных) - копируем в буфер
       if (isAndroidWebView()) {
+        // Пробуем clipboard API
+        try {
+          await navigator.clipboard.writeText(content);
+          return { method: 'clipboard', message: 'JSON скопирован в буфер обмена. Вставьте в заметки или отправьте через мессенджер.' };
+        } catch {
+          // Fallback через textarea
+          const textarea = document.createElement('textarea');
+          textarea.value = content;
+          textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(textarea);
+          if (ok) {
+            return { method: 'clipboard', message: 'JSON скопирован в буфер обмена. Вставьте в заметки или отправьте через мессенджер.' };
+          }
+        }
+        
+        // Если копирование не сработало - открываем в новой вкладке для ручного копирования
         const dataUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = fileName;
-        link.target = '_blank';
-        link.click();
-        return;
+        window.open(dataUrl, '_blank');
+        return { method: 'open', message: 'Данные открыты в новой вкладке. Скопируйте текст вручную.' };
       }
 
       // Для обычного браузера
@@ -77,11 +121,12 @@ export function useDataExport() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      return { method: 'download' };
     } catch (error) {
       console.error("Export error:", error);
       throw new Error("Не удалось экспортировать данные");
     }
-  }, [profile, injections, weights, sideEffects, injectionSites, measurements, isAndroidWebView]);
+  }, [getExportData, isAndroidWebView]);
 
   // Универсальная функция экспорта CSV
   const exportToCSV = useCallback(async (dataType: "injections" | "weights" | "sideEffects") => {
@@ -136,18 +181,31 @@ export function useDataExport() {
           filename: fileName,
           mimeType: 'text/csv'
         }));
-        return;
+        return { method: 'rn-webview' };
       }
 
-      // Для Android WebView (AppsGeyser)
+      // Для Android WebView (AppsGeyser) - копируем в буфер
       if (isAndroidWebView()) {
+        try {
+          await navigator.clipboard.writeText(csvContent);
+          return { method: 'clipboard', message: 'CSV скопирован в буфер обмена.' };
+        } catch {
+          const textarea = document.createElement('textarea');
+          textarea.value = csvContent;
+          textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(textarea);
+          if (ok) {
+            return { method: 'clipboard', message: 'CSV скопирован в буфер обмена.' };
+          }
+        }
+        
         const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = fileName;
-        link.target = '_blank';
-        link.click();
-        return;
+        window.open(dataUrl, '_blank');
+        return { method: 'open', message: 'Данные открыты в новой вкладке.' };
       }
 
       // Для обычного браузера
@@ -160,6 +218,7 @@ export function useDataExport() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      return { method: 'download' };
     } catch (error) {
       console.error("CSV Export error:", error);
       throw new Error("Не удалось экспортировать CSV данные");
@@ -209,16 +268,7 @@ export function useDataExport() {
   // Универсальная функция поделиться JSON
   const shareJSON = useCallback(async () => {
     try {
-      const data = {
-        profile,
-        injections,
-        weights,
-        sideEffects,
-        injectionSites,
-        measurements,
-        exportDate: new Date().toISOString(),
-      };
-
+      const data = getExportData();
       const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
       const content = JSON.stringify(data, null, 2);
 
@@ -230,13 +280,37 @@ export function useDataExport() {
           filename: fileName,
           mimeType: 'application/json'
         }));
-        return { method: 'native-share' } as const;
+        return { method: 'native-share' };
       }
 
-      // Пробуем Web Share API (работает в большинстве мобильных браузеров и WebView)
+      // Для Android WebView - сразу копируем в буфер (надёжнее всего)
+      if (isAndroidWebView()) {
+        try {
+          await navigator.clipboard.writeText(content);
+          return { method: 'clipboard', message: 'JSON скопирован в буфер обмена. Вставьте в мессенджер или заметки.' };
+        } catch {
+          const textarea = document.createElement('textarea');
+          textarea.value = content;
+          textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(textarea);
+          if (ok) {
+            return { method: 'clipboard', message: 'JSON скопирован в буфер обмена. Вставьте в мессенджер или заметки.' };
+          }
+        }
+        
+        // Открываем в новой вкладке для ручного копирования
+        const dataUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
+        window.open(dataUrl, '_blank');
+        return { method: 'open', message: 'Данные открыты. Скопируйте и отправьте через мессенджер.' };
+      }
+
+      // Пробуем Web Share API для не-WebView окружений
       if (navigator.share) {
         try {
-          // Сначала пробуем поделиться файлом
           if (navigator.canShare) {
             const blob = new Blob([content], { type: "application/json" });
             const file = new File([blob], fileName, { type: "application/json" });
@@ -246,103 +320,69 @@ export function useDataExport() {
                 files: [file],
                 title: 'Экспорт данных',
               });
-              return { method: 'native-share' } as const;
+              return { method: 'share-files' };
             }
           }
           
-          // Fallback: делимся текстом
           await navigator.share({
             title: 'Экспорт данных Shot Track Buddy',
             text: content,
           });
-          return { method: 'native-share' } as const;
+          return { method: 'share-text' };
         } catch (shareError: any) {
-          // Пользователь отменил - не показываем ошибку
           if (shareError?.name === 'AbortError') {
-            return { method: 'cancelled' } as const;
+            throw new Error('Отменено пользователем');
           }
           console.log('Web Share API error:', shareError);
         }
       }
 
-      // Fallback для Android WebView - открываем intent
-      if (isAndroidWebView() || isMobileDevice()) {
-        // Пробуем Android intent для текста
-        const intentUrl = `intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=${encodeURIComponent(content)};S.android.intent.extra.SUBJECT=Экспорт данных Shot Track Buddy;end`;
-        
-        try {
-          window.location.href = intentUrl;
-          return { method: 'intent' } as const;
-        } catch {
-          // Intent не сработал, используем копирование
-        }
-      }
-
-      // Финальный fallback - скачивание файла
-      if (isAndroidWebView()) {
-        const dataUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = fileName;
-        link.target = '_blank';
-        link.click();
-      } else {
-        const blob = new Blob([content], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }
+      // Финальный fallback - скачивание
+      const blob = new Blob([content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
-      return { method: 'download' } as const;
+      return { method: 'download' };
     } catch (error: any) {
-      if (error?.name === 'AbortError') {
-        return { method: 'cancelled' } as const;
+      if (error?.message === 'Отменено пользователем') {
+        throw error;
       }
       console.error("Share error:", error);
       throw new Error("Не удалось поделиться данными");
     }
-  }, [profile, injections, weights, sideEffects, injectionSites, measurements, isAndroidWebView, isMobileDevice]);
+  }, [getExportData, isAndroidWebView]);
 
   // Функция копирования в буфер обмена
   const copyJSONToClipboard = useCallback(async () => {
-    const data = {
-      profile,
-      injections,
-      weights,
-      sideEffects,
-      injectionSites,
-      measurements,
-      exportDate: new Date().toISOString(),
-    };
+    const data = getExportData();
     const content = JSON.stringify(data, null, 2);
 
     try {
       await navigator.clipboard.writeText(content);
-      return { method: 'clipboard' } as const;
+      return { method: 'clipboard' };
     } catch {
       try {
         const textarea = document.createElement('textarea');
         textarea.value = content;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        textarea.style.pointerEvents = 'none';
+        textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
         document.body.appendChild(textarea);
         textarea.focus();
         textarea.select();
         const ok = document.execCommand('copy');
         document.body.removeChild(textarea);
         if (!ok) throw new Error('execCommand copy failed');
-        return { method: 'copy-textarea' } as const;
+        return { method: 'copy-textarea' };
       } catch (e) {
         throw new Error('Не удалось скопировать данные.');
       }
     }
-  }, [profile, injections, weights, sideEffects, injectionSites, measurements]);
+  }, [getExportData]);
 
   return {
     exportToJSON,
