@@ -33,10 +33,10 @@ export function DataExporter() {
 
   const handleExportCSV = async (dataType: "injections" | "weights" | "sideEffects") => {
     try {
-      await exportToCSV(dataType);
+      const result = await exportToCSV(dataType);
       toast({
         title: t.dataExported,
-        description: t.csvSaved,
+        description: result?.message || t.csvSaved,
       });
     } catch (error) {
       toast({
@@ -148,7 +148,7 @@ export function DataExporter() {
             <Input
               ref={fileInputRef}
               type="file"
-              accept=".json,.zip"
+              accept=".json"
               onChange={handleImportFile}
               className="hidden"
             />

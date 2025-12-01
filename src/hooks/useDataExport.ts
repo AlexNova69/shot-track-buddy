@@ -1,6 +1,5 @@
 import { useLocalStorage } from "./useLocalStorage";
 import { useCallback } from 'react';
-import JSZip from 'jszip';
 
 // Расширяем Window interface для ReactNativeWebView
 declare global {
@@ -19,6 +18,41 @@ export function useDataExport() {
   const [measurements, setMeasurements] = useLocalStorage("measurements", []);
   const [profile, setProfile] = useLocalStorage("profile", {});
 
+  // Улучшенная проверка на Android WebView (AppsGeyser, TWA и подобные)
+  const isAndroidWebView = useCallback(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    
+    // Проверяем на Android
+    if (!ua.includes('android')) return false;
+    
+    // Явные маркеры WebView
+    if (ua.includes('wv') || ua.includes('webview')) return true;
+    
+    // AppsGeyser и другие обёртки часто не добавляют 'wv', но:
+    // 1. Отсутствует Chrome/Firefox/Samsung Browser и т.д.
+    // 2. Или присутствует Version/X.X (старый Android Browser / WebView)
+    const hasBrowserMarker = 
+      (ua.includes('chrome') && !ua.includes('version/')) ||
+      ua.includes('firefox') ||
+      ua.includes('samsungbrowser') ||
+      ua.includes('opera') ||
+      ua.includes('ucbrowser') ||
+      ua.includes('edge');
+    
+    // Если Android но нет маркера браузера - скорее всего WebView
+    if (!hasBrowserMarker) return true;
+    
+    // Проверка на standalone режим (PWA/TWA)
+    if (window.matchMedia?.('(display-mode: standalone)').matches) return true;
+    
+    return false;
+  }, []);
+
+  // Проверка на мобильное устройство
+  const isMobileDevice = useCallback(() => {
+    return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+  }, []);
+
   // Получаем данные для экспорта
   const getExportData = useCallback(() => {
     return {
@@ -32,73 +66,67 @@ export function useDataExport() {
     };
   }, [profile, injections, weights, sideEffects, injectionSites, measurements]);
 
-  // Создание ZIP архива с JSON данными
-  const createZipArchive = useCallback(async () => {
-    const data = getExportData();
-    const jsonContent = JSON.stringify(data, null, 2);
-    const dateStr = new Date().toISOString().split('T')[0];
-    
-    const zip = new JSZip();
-    zip.file(`injection-tracker-${dateStr}.json`, jsonContent);
-    
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
-    const zipFileName = `injection-tracker-${dateStr}.zip`;
-    
-    return { zipBlob, zipFileName, jsonContent };
-  }, [getExportData]);
-
-  // Универсальная функция экспорта ZIP
+  // Универсальная функция экспорта JSON
   const exportToJSON = useCallback(async () => {
     try {
-      const { zipBlob, zipFileName } = await createZipArchive();
+      const data = getExportData();
+      const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
+      const content = JSON.stringify(data, null, 2);
 
       // Для React Native WebView
       if (window.ReactNativeWebView) {
-        const base64 = await blobToBase64(zipBlob);
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'EXPORT_DATA',
-          data: base64,
-          filename: zipFileName,
-          mimeType: 'application/zip',
-          isBase64: true
+          data: content,
+          filename: fileName,
+          mimeType: 'application/json'
         }));
         return { method: 'rn-webview' };
       }
 
-      // Для всех браузеров и WebView - скачивание через blob URL
-      const url = URL.createObjectURL(zipBlob);
+      // Для Android WebView (AppsGeyser и подобных) - копируем в буфер
+      if (isAndroidWebView()) {
+        // Пробуем clipboard API
+        try {
+          await navigator.clipboard.writeText(content);
+          return { method: 'clipboard', message: 'JSON скопирован в буфер обмена. Вставьте в заметки или отправьте через мессенджер.' };
+        } catch {
+          // Fallback через textarea
+          const textarea = document.createElement('textarea');
+          textarea.value = content;
+          textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(textarea);
+          if (ok) {
+            return { method: 'clipboard', message: 'JSON скопирован в буфер обмена. Вставьте в заметки или отправьте через мессенджер.' };
+          }
+        }
+        
+        // Если копирование не сработало - открываем в новой вкладке для ручного копирования
+        const dataUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
+        window.open(dataUrl, '_blank');
+        return { method: 'open', message: 'Данные открыты в новой вкладке. Скопируйте текст вручную.' };
+      }
+
+      // Для обычного браузера
+      const blob = new Blob([content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = zipFileName;
-      link.style.display = 'none';
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
-      
-      // Задержка перед очисткой
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
-      
-      return { method: 'download', message: `ZIP архив "${zipFileName}" скачан` };
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return { method: 'download' };
     } catch (error) {
       console.error("Export error:", error);
       throw new Error("Не удалось экспортировать данные");
     }
-  }, [createZipArchive]);
-
-  // Вспомогательная функция для конвертации Blob в Base64
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
+  }, [getExportData, isAndroidWebView]);
 
   // Универсальная функция экспорта CSV
   const exportToCSV = useCallback(async (dataType: "injections" | "weights" | "sideEffects") => {
@@ -156,114 +184,151 @@ export function useDataExport() {
         return { method: 'rn-webview' };
       }
 
-      // Для всех браузеров - скачивание
+      // Для Android WebView (AppsGeyser) - копируем в буфер
+      if (isAndroidWebView()) {
+        try {
+          await navigator.clipboard.writeText(csvContent);
+          return { method: 'clipboard', message: 'CSV скопирован в буфер обмена.' };
+        } catch {
+          const textarea = document.createElement('textarea');
+          textarea.value = csvContent;
+          textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(textarea);
+          if (ok) {
+            return { method: 'clipboard', message: 'CSV скопирован в буфер обмена.' };
+          }
+        }
+        
+        const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+        window.open(dataUrl, '_blank');
+        return { method: 'open', message: 'Данные открыты в новой вкладке.' };
+      }
+
+      // Для обычного браузера
       const blob = new Blob([csvContent], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = fileName;
-      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
-      
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       return { method: 'download' };
     } catch (error) {
       console.error("CSV Export error:", error);
       throw new Error("Не удалось экспортировать CSV данные");
     }
-  }, [injections, weights, sideEffects]);
+  }, [injections, weights, sideEffects, isAndroidWebView]);
 
-  // Функция импорта (поддержка JSON и ZIP)
-  const importFromJSON = useCallback(async (file: File) => {
-    try {
-      let jsonContent: string;
-      
-      // Если это ZIP файл - распаковываем
-      if (file.name.endsWith('.zip') || file.type === 'application/zip') {
-        const zip = await JSZip.loadAsync(file);
-        const jsonFile = Object.keys(zip.files).find(name => name.endsWith('.json'));
-        
-        if (!jsonFile) {
-          throw new Error('JSON файл не найден в архиве');
+  // Функция импорта
+  const importFromJSON = useCallback((file: File) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+          
+          if (!data || typeof data !== 'object') {
+            throw new Error('Invalid data format');
+          }
+
+          if (data.injections && Array.isArray(data.injections)) {
+            setInjections(data.injections);
+          }
+          if (data.weights && Array.isArray(data.weights)) {
+            setWeights(data.weights);
+          }
+          if (data.sideEffects && Array.isArray(data.sideEffects)) {
+            setSideEffects(data.sideEffects);
+          }
+          if (data.injectionSites && Array.isArray(data.injectionSites)) {
+            setInjectionSites(data.injectionSites);
+          }
+          if (data.measurements && Array.isArray(data.measurements)) {
+            setMeasurements(data.measurements);
+          }
+          if (data.profile && typeof data.profile === 'object') {
+            setProfile(data.profile);
+          }
+
+          resolve(data);
+        } catch (error) {
+          reject(error);
         }
-        
-        jsonContent = await zip.files[jsonFile].async('string');
-      } else {
-        // Обычный JSON файл
-        jsonContent = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.onerror = reject;
-          reader.readAsText(file);
-        });
-      }
-      
-      const data = JSON.parse(jsonContent);
-      
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid data format');
-      }
-
-      if (data.injections && Array.isArray(data.injections)) {
-        setInjections(data.injections);
-      }
-      if (data.weights && Array.isArray(data.weights)) {
-        setWeights(data.weights);
-      }
-      if (data.sideEffects && Array.isArray(data.sideEffects)) {
-        setSideEffects(data.sideEffects);
-      }
-      if (data.injectionSites && Array.isArray(data.injectionSites)) {
-        setInjectionSites(data.injectionSites);
-      }
-      if (data.measurements && Array.isArray(data.measurements)) {
-        setMeasurements(data.measurements);
-      }
-      if (data.profile && typeof data.profile === 'object') {
-        setProfile(data.profile);
-      }
-
-      return data;
-    } catch (error) {
-      throw error;
-    }
+      };
+      reader.readAsText(file);
+    });
   }, [setInjections, setWeights, setSideEffects, setInjectionSites, setMeasurements, setProfile]);
 
-  // Универсальная функция поделиться ZIP
+  // Универсальная функция поделиться JSON
   const shareJSON = useCallback(async () => {
     try {
-      const { zipBlob, zipFileName } = await createZipArchive();
+      const data = getExportData();
+      const fileName = `injection-tracker-${new Date().toISOString().split('T')[0]}.json`;
+      const content = JSON.stringify(data, null, 2);
 
       // Для React Native WebView
       if (window.ReactNativeWebView) {
-        const base64 = await blobToBase64(zipBlob);
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'SHARE_DATA',
-          data: base64,
-          filename: zipFileName,
-          mimeType: 'application/zip',
-          isBase64: true
+          data: content,
+          filename: fileName,
+          mimeType: 'application/json'
         }));
         return { method: 'native-share' };
       }
 
-      // Пробуем Web Share API
-      if (navigator.share && navigator.canShare) {
+      // Для Android WebView - сразу копируем в буфер (надёжнее всего)
+      if (isAndroidWebView()) {
         try {
-          const file = new File([zipBlob], zipFileName, { type: "application/zip" });
-          
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: 'Экспорт данных Shot Track Buddy',
-            });
-            return { method: 'share-files' };
+          await navigator.clipboard.writeText(content);
+          return { method: 'clipboard', message: 'JSON скопирован в буфер обмена. Вставьте в мессенджер или заметки.' };
+        } catch {
+          const textarea = document.createElement('textarea');
+          textarea.value = content;
+          textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(textarea);
+          if (ok) {
+            return { method: 'clipboard', message: 'JSON скопирован в буфер обмена. Вставьте в мессенджер или заметки.' };
           }
+        }
+        
+        // Открываем в новой вкладке для ручного копирования
+        const dataUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(content);
+        window.open(dataUrl, '_blank');
+        return { method: 'open', message: 'Данные открыты. Скопируйте и отправьте через мессенджер.' };
+      }
+
+      // Пробуем Web Share API для не-WebView окружений
+      if (navigator.share) {
+        try {
+          if (navigator.canShare) {
+            const blob = new Blob([content], { type: "application/json" });
+            const file = new File([blob], fileName, { type: "application/json" });
+            
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: 'Экспорт данных',
+              });
+              return { method: 'share-files' };
+            }
+          }
+          
+          await navigator.share({
+            title: 'Экспорт данных Shot Track Buddy',
+            text: content,
+          });
+          return { method: 'share-text' };
         } catch (shareError: any) {
           if (shareError?.name === 'AbortError') {
             throw new Error('Отменено пользователем');
@@ -272,21 +337,18 @@ export function useDataExport() {
         }
       }
 
-      // Fallback - скачивание
-      const url = URL.createObjectURL(zipBlob);
+      // Финальный fallback - скачивание
+      const blob = new Blob([content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = zipFileName;
-      link.style.display = 'none';
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
-      
-      return { method: 'download', message: `ZIP архив "${zipFileName}" скачан` };
+      return { method: 'download' };
     } catch (error: any) {
       if (error?.message === 'Отменено пользователем') {
         throw error;
@@ -294,7 +356,7 @@ export function useDataExport() {
       console.error("Share error:", error);
       throw new Error("Не удалось поделиться данными");
     }
-  }, [createZipArchive]);
+  }, [getExportData, isAndroidWebView]);
 
   // Функция копирования в буфер обмена
   const copyJSONToClipboard = useCallback(async () => {
