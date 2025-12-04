@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Area, AreaChart } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { TrendingDown, Syringe, Activity, Target, MapPin, Calendar, Ruler } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
 import { translations } from "@/lib/translations";
 import { MeasurementsProgress } from "@/components/MeasurementsProgress";
+import { WeightChart } from "@/components/WeightChart";
 
 export default function Charts() {
   const { language } = useLanguage();
@@ -81,11 +82,6 @@ export default function Charts() {
     return acc;
   }, []);
 
-  // Enhanced weight data with trend
-  const enhancedWeightData = weightData.map((entry, index) => {
-    const trend = index > 0 ? entry.weight - weightData[index - 1].weight : 0;
-    return { ...entry, trend };
-  });
 
   const COLORS = ['#0066cc', '#00b894', '#fdcb6e', '#e17055', '#a29bfe'];
 
@@ -174,68 +170,7 @@ export default function Charts() {
         </TabsList>
 
         <TabsContent value="weight" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingDown className="w-5 h-5 text-medical-success" />
-                {t.weightDynamicsWithTrend}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {enhancedWeightData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={350}>
-                  <AreaChart data={enhancedWeightData}>
-                    <defs>
-                      <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--medical-success))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--medical-success))" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="date" 
-                      fontSize={12}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis 
-                      fontSize={12}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                      formatter={(value: any, name: string) => [
-                        `${value} ${language === "ru" ? "кг" : "kg"}`, 
-                        name === 'weight' ? (language === "ru" ? 'Вес' : 'Weight') : (language === "ru" ? 'Изменение' : 'Change')
-                      ]}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="weight"
-                      stroke="hsl(var(--medical-success))"
-                      strokeWidth={2}
-                      fill="url(#weightGradient)"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="trend" 
-                      stroke="hsl(var(--medical-warning))" 
-                      strokeWidth={1}
-                      strokeDasharray="5 5"
-                      dot={{ fill: 'hsl(var(--medical-warning))', strokeWidth: 1, r: 2 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[350px] flex items-center justify-center text-muted-foreground">
-                  {t.noWeightData}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <WeightChart />
         </TabsContent>
 
         <TabsContent value="injections" className="space-y-4">
